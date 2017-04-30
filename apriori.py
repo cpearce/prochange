@@ -90,12 +90,22 @@ def Apriori(index, minsup):
         candidates = generation
     return results
 
+testDataSetItemSets = { frozenset({"i"}) : 2/6,
+                        frozenset({"z"}) : 4/6,
+                        frozenset({"x"}) : 4/6,
+                        frozenset({"y"}) : 2/6,
+                        frozenset({"x","z"}) : 4/6,
+                        frozenset({"y","z"}) : 2/6,
+                        frozenset({"x","y"}) : 2/6,
+                        frozenset({"x","y","z"}) : 2/6}
+
 def TestApriori():
     index = InvertedIndex();
     index.load(testDataSet);
     itemsets = Apriori(index, 2/6)
+    assert(set(testDataSetItemSets.keys()) == set(itemsets))
     for itemset in itemsets:
-        print(itemset, "has support", index.support(itemset))
+        assert(testDataSetItemSets[itemset] == index.support(itemset))
 
 if __name__ == "__main__":
     TestInvertedIndex()
