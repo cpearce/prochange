@@ -77,8 +77,8 @@ def containsAllSubsets(candidate, candidates):
     return True
 
 def Apriori(index, minsup):
-    candidates = [frozenset(i) for i in index.items() if index.support({i}) >= minsup]
-    results = candidates
+    candidates = set([frozenset(i) for i in index.items() if index.support({i}) >= minsup])
+    results = list(candidates)
     while len(candidates) > 0:
         generation = set()
         for (a,b) in product(candidates, candidates):
