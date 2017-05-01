@@ -19,7 +19,7 @@ class InvertedIndex:
             self._add([s.strip() for s in transaction.split(",")])
 
     def loadCSV(self, csvFilePath):
-        if not isinstance(data, str):
+        if not isinstance(csvFilePath, str):
             raise TypeError("InvertedIndex.loadCSV() expects a path as string")
         with open(csvFilePath, newline='') as csvfile:
             reader = csv.reader(csvfile)
