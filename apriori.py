@@ -1,13 +1,6 @@
 from index import InvertedIndex
 from itertools import product
 
-testDataSet = ("a,b,c,d,e,f\n"
-               "g,h,i,j,k,l\n"
-               "z,x\n"
-               "z,x\n"
-               "z,x,y\n"
-               "z,x,y,i\n")
-
 def containsAllSubsets(candidate, candidates):
     for item in candidate:
         if candidate - {item} not in candidates:
@@ -28,22 +21,29 @@ def Apriori(index, minsup):
         candidates = generation
     return results
 
-testDataSetItemSets = { frozenset({"i"}) : 2/6,
-                        frozenset({"z"}) : 4/6,
-                        frozenset({"x"}) : 4/6,
-                        frozenset({"y"}) : 2/6,
-                        frozenset({"x","z"}) : 4/6,
-                        frozenset({"y","z"}) : 2/6,
-                        frozenset({"x","y"}) : 2/6,
-                        frozenset({"x","y","z"}) : 2/6}
-
 def TestApriori():
+    data = ("a,b,c,d,e,f\n"
+            "g,h,i,j,k,l\n"
+            "z,x\n"
+            "z,x\n"
+            "z,x,y\n"
+            "z,x,y,i\n")
+
+    expectedItemSets = { frozenset({"i"}) : 2/6,
+                         frozenset({"z"}) : 4/6,
+                         frozenset({"x"}) : 4/6,
+                         frozenset({"y"}) : 2/6,
+                         frozenset({"x","z"}) : 4/6,
+                         frozenset({"y","z"}) : 2/6,
+                         frozenset({"x","y"}) : 2/6,
+                         frozenset({"x","y","z"}) : 2/6}
+
     index = InvertedIndex();
-    index.load(testDataSet);
+    index.load(data);
     itemsets = Apriori(index, 2/6)
-    assert(set(testDataSetItemSets.keys()) == set(itemsets))
+    assert(set(expectedItemSets.keys()) == set(itemsets))
     for itemset in itemsets:
-        assert(testDataSetItemSets[itemset] == index.support(itemset))
+        assert(expectedItemSets[itemset] == index.support(itemset))
 
 if __name__ == "__main__":
     TestApriori();

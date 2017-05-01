@@ -34,17 +34,15 @@ class InvertedIndex:
             raise TypeError("InvertedIndex.support() expects a set of items") 
         return len(set.intersection(*[self.index[i] for i in itemset])) / self.numTransactions
 
-testDataSet = ("a,b,c,d,e,f\n"
-               "g,h,i,j,k,l\n"
-               "z,x\n"
-               "z,x\n"
-               "z,x,y\n"
-               "z,x,y,i\n")
-
 def TestInvertedIndex():    
-    # Test: Dataset 1, check loading, test supports.
+    data = ("a,b,c,d,e,f\n"
+            "g,h,i,j,k,l\n"
+            "z,x\n"
+            "z,x\n"
+            "z,x,y\n"
+            "z,x,y,i\n")
     index = InvertedIndex();
-    index.load(testDataSet);
+    index.load(data);
     assert(index.support({"a"}) == 1 / 6);
     assert(index.support({"b"}) == 1 / 6);
     assert(index.support({"c"}) == 1 / 6);
