@@ -1,5 +1,9 @@
 from collections import Counter
 from collections import deque
+from apriori import Apriori
+from index import InvertedIndex
+from item import Item
+import csv
 
 class FPNode:
     def __init__(self, item=None, count=0, parent=None):
@@ -52,10 +56,11 @@ class FPTree:
     def __str__(self):
         return "(" + str(self.root) + ")"
 
+
 def PathToRoot(node):
     path = []
     while not node.isRoot():
-        path += node.item
+        path += [node.item]
         node = node.parent
     return path
 
@@ -63,29 +68,24 @@ def ConstructConditionalTree(tree, item):
     conditionalTree = FPTree()
     for node in tree.header[item]:
         path = PathToRoot(node.parent)
-        print("path for {0}={1}".format(item, path))
         conditionalTree.insert(reversed(path), node.count)
     return conditionalTree
 
 def FPGrowth(tree, minCount, path):
     itemsets = []
-    if tree.hasSinglePath():
+    # if tree.hasSinglePath():
         #print("has single path")
         #return Patter
         # TODO: Seems this is unnecesary
-        pass
+        # pass
     # foreach item in the header table that is frequent
     for item in sorted(tree.itemCount.keys(), key=lambda item:tree.itemCount[item]):
-        print("FPGrowth item={} path={} count={}".format(item, path, tree.itemCount[item]))
         if tree.itemCount[item] < minCount:
-            # print("insufficient count for {}".format(item))
             continue
-        itemsets += [path + [item]]
+        itemsets += [frozenset(path + [item])]
         conditionalTree = ConstructConditionalTree(tree, item)
-        print("conditional tree for item={} path={} is {}".format(item, path, conditionalTree))
         itemsets += FPGrowth(conditionalTree, minCount, path + [item])
     return itemsets
-
 
 def MineFPTree(transactions, minsup):
     tree = ConstructInitialTree(transactions)
@@ -95,15 +95,19 @@ def MineFPTree(transactions, minsup):
 def ConstructInitialTree(transactions):
     frequency = Counter()
     for transaction in transactions:
-        for item in transaction:
+        for item in map(Item, transaction):
             frequency[item] +=1
     tree = FPTree()
     for transaction in transactions:
         # sort by decreasing count.
-        tree.insert(sorted(transaction, key=lambda item:frequency[item], reverse=True))
+        tree.insert(sorted(map(Item, transaction), key=lambda item:frequency[item], reverse=True))
     return tree
 
+def ItemSet(lst):
+    return frozenset(map(Item, lst))
+
 def TestFPTree():
+    # Basic sanity check of know resuts.
     transactions = [
         ["a", "b"],
         ["b", "c", "d"],
@@ -116,23 +120,40 @@ def TestFPTree():
         ["a", "b", "d"],
         ["b", "c", "e"],
     ]
-    # TODO: Can I flatten transactions somehow, and pass to Counter constructor?
-    tree = ConstructInitialTree(transactions)
-    print(str(tree))
+    expectedItemsets = set([
+        ItemSet("e"), ItemSet("de"), ItemSet("ade"), ItemSet("ce"),
+        ItemSet("ae"),
+
+        ItemSet("d"), ItemSet("cd"), ItemSet("bcd"), ItemSet("acd"),
+        ItemSet("bd"), ItemSet("abd"), ItemSet("ad"),
+
+        ItemSet("c"), ItemSet("bc"), ItemSet("abc"), ItemSet("ac"),
+
+        ItemSet("b"), ItemSet("ab"),
+
+        ItemSet("a"),
+    ])
 
     itemsets = MineFPTree(transactions, 2 / len(transactions))
-    print("Itemsets={}".format(itemsets))
+    assert(set(itemsets) == expectedItemsets)
 
-    # print("header list:")
-    # for item in tree.header.keys():
-    #     print("item:" + item)
-    #     for node in tree.header[item]:
-    #         path = []
-    #         while node is not None:
-    #             path.append("(" + str(node.item) + ":" + str(node.count) + ")")
-    #             node = node.parent
-    #         print(",".join(path))
+    # Run Apriori and FP-Growth and assert both have the same results.
+    minsup = 0.3
+    csvFilePath = "UCI-zoo.csv"
 
+    index = InvertedIndex();
+    index.loadCSV(csvFilePath)
+    apriori_zoo = Apriori(index, minsup)
+    print("Apriori complete. generated {} itemsets".format(len(apriori_zoo)))
+
+    fp_zoo = []
+    with open(csvFilePath, newline='') as csvfile:
+        transactions = list(csv.reader(csvfile))
+        fp_zoo = MineFPTree(transactions, minsup)
+
+    print("FPGrowth complete. generated {} itemsets".format(len(fp_zoo)))
+
+    assert(set(fp_zoo) == set(apriori_zoo))
 
 if __name__ == "__main__":
     TestFPTree()
