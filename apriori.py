@@ -1,5 +1,6 @@
 from index import InvertedIndex
 from itertools import product
+from item import Item
 
 def containsAllSubsets(candidate, candidates):
     for item in candidate:
@@ -8,7 +9,7 @@ def containsAllSubsets(candidate, candidates):
     return True
 
 def Apriori(index, minsup):
-    candidates = set([frozenset(i) for i in index.items() if index.support({i}) >= minsup])
+    candidates = set([frozenset({i}) for i in index.items() if index.support({i}) >= minsup])
     results = list(candidates)
     while len(candidates) > 0:
         generation = set()
@@ -29,14 +30,14 @@ def TestApriori():
             "z,x,y\n"
             "z,x,y,i\n")
 
-    expectedItemSets = { frozenset({"i"}) : 2/6,
-                         frozenset({"z"}) : 4/6,
-                         frozenset({"x"}) : 4/6,
-                         frozenset({"y"}) : 2/6,
-                         frozenset({"x","z"}) : 4/6,
-                         frozenset({"y","z"}) : 2/6,
-                         frozenset({"x","y"}) : 2/6,
-                         frozenset({"x","y","z"}) : 2/6}
+    expectedItemSets = { frozenset({Item("i")}) : 2/6,
+                         frozenset({Item("z")}) : 4/6,
+                         frozenset({Item("x")}) : 4/6,
+                         frozenset({Item("y")}) : 2/6,
+                         frozenset({Item("x"),Item("z")}) : 4/6,
+                         frozenset({Item("y"),Item("z")}) : 2/6,
+                         frozenset({Item("x"),Item("y")}) : 2/6,
+                         frozenset({Item("x"),Item("y"),Item("z")}) : 2/6}
 
     index = InvertedIndex();
     index.load(data);
