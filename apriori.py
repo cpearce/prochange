@@ -1,6 +1,7 @@
 from index import InvertedIndex
 from itertools import product
 from item import Item
+from item import ItemSet
 
 def containsAllSubsets(candidate, candidates):
     for item in candidate:
@@ -34,14 +35,14 @@ def TestApriori():
             "z,x,y\n"
             "z,x,y,i\n")
 
-    expectedItemSets = { frozenset({Item("i")}) : 2/6,
-                         frozenset({Item("z")}) : 4/6,
-                         frozenset({Item("x")}) : 4/6,
-                         frozenset({Item("y")}) : 2/6,
-                         frozenset({Item("x"),Item("z")}) : 4/6,
-                         frozenset({Item("y"),Item("z")}) : 2/6,
-                         frozenset({Item("x"),Item("y")}) : 2/6,
-                         frozenset({Item("x"),Item("y"),Item("z")}) : 2/6}
+    expectedItemSets = { ItemSet("i") : 2/6,
+                         ItemSet("z") : 4/6,
+                         ItemSet("x") : 4/6,
+                         ItemSet("y") : 2/6,
+                         ItemSet("xz") : 4/6,
+                         ItemSet("yz") : 2/6,
+                         ItemSet("xy") : 2/6,
+                         ItemSet("xyz") : 2/6}
 
     index = InvertedIndex();
     index.load(data);
