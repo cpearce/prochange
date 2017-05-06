@@ -26,3 +26,6 @@ class Item:
 
     def __hash__(self):
         return self.id
+
+def ItemSet(lst):
+    return frozenset(map(Item, lst))

@@ -3,6 +3,7 @@ from collections import deque
 from apriori import Apriori
 from index import InvertedIndex
 from item import Item
+from item import ItemSet
 import csv
 
 class FPNode:
@@ -102,9 +103,6 @@ def ConstructInitialTree(transactions):
         # sort by decreasing count.
         tree.insert(sorted(map(Item, transaction), key=lambda item:frequency[item], reverse=True))
     return tree
-
-def ItemSet(lst):
-    return frozenset(map(Item, lst))
 
 def TestFPTree():
     # Basic sanity check of know resuts.
