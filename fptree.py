@@ -150,7 +150,7 @@ def TestFPTree():
 
     # Run Apriori and FP-Growth and assert both have the same results.
     minsup = 0.3
-    csvFilePath = "UCI-zoo.csv"
+    csvFilePath = "datasets/UCI-zoo.csv"
 
     index = InvertedIndex();
     index.loadCSV(csvFilePath)
