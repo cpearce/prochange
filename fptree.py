@@ -72,13 +72,21 @@ def ConstructConditionalTree(tree, item):
         conditionalTree.insert(reversed(path), node.count)
     return conditionalTree
 
-def FPGrowth(tree, minCount, path):
+def PatternsInPath(tree, minCount, path):
     itemsets = []
-    # if tree.hasSinglePath():
-        #print("has single path")
-        #return Patter
-        # TODO: Seems this is unnecesary
-        # pass
+    for item in tree.itemCount.keys():
+        if tree.itemCount[item] < minCount:
+            continue
+        path += [item]
+        itemsets += [frozenset(path)]
+    return itemsets
+
+def FPGrowth(tree, minCount, path):
+    # If tree has only one branch, we can skip creating a tree and just add
+    # all combinations of items in the branch.
+    if tree.hasSinglePath():
+        return PatternsInPath(tree, minCount, path);
+    itemsets = []
     # foreach item in the header table that is frequent
     for item in sorted(tree.itemCount.keys(), key=lambda item:tree.itemCount[item]):
         if tree.itemCount[item] < minCount:
