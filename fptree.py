@@ -52,7 +52,7 @@ class FPTree:
                 return False
             elif len(node.children) == 0:
                 return True
-            node = list(node.children.values())[0]
+            node = FirstChild(node)
 
     def __str__(self):
         return "(" + str(self.root) + ")"
@@ -71,6 +71,9 @@ def ConstructConditionalTree(tree, item):
         path = PathToRoot(node.parent)
         conditionalTree.insert(reversed(path), node.count)
     return conditionalTree
+
+def FirstChild(node):
+    return list(node.children.values())[0]
 
 def PatternsInPath(tree, minCount, path):
     itemsets = []
