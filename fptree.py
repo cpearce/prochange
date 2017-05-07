@@ -86,12 +86,17 @@ def FPGrowth(tree, minCount, path):
     # all combinations of items in the branch.
     if tree.hasSinglePath():
         return PatternsInPath(tree, minCount, path);
+    # For each item in the tree that is frequent, in increasing order
+    # of frequency...
     itemsets = []
-    # foreach item in the header table that is frequent
     for item in sorted(tree.itemCount.keys(), key=lambda item:tree.itemCount[item]):
         if tree.itemCount[item] < minCount:
+            # Item is no longer frequent on this path, skip.
             continue
+        # Record item as part of the path.
         itemsets += [frozenset(path + [item])]
+        # Build conditional tree of all patterns in this tree which start
+        # with this item.
         conditionalTree = ConstructConditionalTree(tree, item)
         itemsets += FPGrowth(conditionalTree, minCount, path + [item])
     return itemsets
