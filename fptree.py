@@ -76,20 +76,30 @@ def ConstructConditionalTree(tree, item):
 def FirstChild(node):
     return list(node.children.values())[0]
 
-def PatternsInPath(tree, minCount, path):
+def PatternsInPath(tree, node, minCount, path):
     itemsets = []
-    for item in tree.itemCount.keys():
-        if tree.itemCount[item] < minCount:
-            continue
-        path += [item]
-        itemsets += [frozenset(path)]
+    isLarge = tree.itemCount[node.item] >= minCount
+    if isLarge:
+        itemsets += [frozenset(path + [node.item])]
+    if len(node.children) > 0:
+        child = FirstChild(node)
+        if isLarge:
+            itemsets += PatternsInPath(tree, child, minCount, path + [node.item])
+        itemsets += PatternsInPath(tree, child, minCount, path)
     return itemsets
+
+def PatternsInTree(tree, minCount, path):
+    assert(tree.hasSinglePath())
+    if len(tree.root.children) == 0:
+        return []
+    return PatternsInPath(tree, FirstChild(tree.root), minCount, path);
 
 def FPGrowth(tree, minCount, path):
     # If tree has only one branch, we can skip creating a tree and just add
     # all combinations of items in the branch.
     if tree.hasSinglePath():
-        return PatternsInPath(tree, minCount, path);
+        rv = PatternsInTree(tree, minCount, path);
+        return rv
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
     itemsets = []
