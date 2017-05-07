@@ -4,6 +4,7 @@ from apriori import Apriori
 from index import InvertedIndex
 from item import Item
 from item import ItemSet
+import time
 import csv
 
 class FPNode:
@@ -151,23 +152,42 @@ def TestFPTree():
     itemsets = MineFPTree(transactions, 2 / len(transactions))
     assert(set(itemsets) == expectedItemsets)
 
-    # Run Apriori and FP-Growth and assert both have the same results.
-    minsup = 0.3
-    csvFilePath = "datasets/UCI-zoo.csv"
+    datasets = [
+        ("datasets/BMS-POS.csv", 0.02),
+        ("datasets/UCI-zoo.csv", 0.2),
+        ("datasets/kosarak.csv", 0.01),
+        ("datasets/mushroom.csv", 0.3),
+    ]
 
-    index = InvertedIndex();
-    index.loadCSV(csvFilePath)
-    apriori_zoo = Apriori(index, minsup)
-    print("Apriori complete. generated {} itemsets".format(len(apriori_zoo)))
+    for (csvFilePath, minsup) in datasets:
+        # Run Apriori and FP-Growth and assert both have the same results.
+        print("Running Apriori for {}".format(csvFilePath))
+        start = time.time()
+        index = InvertedIndex();
+        index.loadCSV(csvFilePath)
+        apriori_itemsets = Apriori(index, minsup)
+        apriori_duration = time.time() - start
+        print("Apriori complete. Generated {} itemsets in {:.2f} seconds".format(len(apriori_itemsets), apriori_duration))
 
-    fp_zoo = []
-    with open(csvFilePath, newline='') as csvfile:
-        transactions = list(csv.reader(csvfile))
-        fp_zoo = MineFPTree(transactions, minsup)
+        print("Running FPTree for {}".format(csvFilePath))
+        start = time.time()
+        fptree_itemsets = []
+        with open(csvFilePath, newline='') as csvfile:
+            transactions = list(csv.reader(csvfile))
+            fptree_itemsets = MineFPTree(transactions, minsup)
+        fptree_duration = time.time() - start
+        print("FPGrowth complete. Generated {} itemsets in {:.2f} seconds".format(len(fptree_itemsets), fptree_duration))
 
-    print("FPGrowth complete. generated {} itemsets".format(len(fp_zoo)))
+        if set(fptree_itemsets) == set(apriori_itemsets):
+            print("SUCCESS({}): Apriori and fptree results match".format(csvFilePath))
+        else:
+            print("FAIL({}): Apriori and fptree results differ!".format(csvFilePath))
 
-    assert(set(fp_zoo) == set(apriori_zoo))
+        if apriori_duration > fptree_duration:
+            print("FPTree was faster by {:.2f} seconds".format(apriori_duration - fptree_duration))
+        else:
+            print("Apriori was faster by {:.2f} seconds".format(fptree_duration - apriori_duration))
+        print("")
 
 if __name__ == "__main__":
     TestFPTree()
