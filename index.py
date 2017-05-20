@@ -1,5 +1,9 @@
 import csv
 from item import Item
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
 
 class InvertedIndex:
     def __init__(self):

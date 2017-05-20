@@ -2,6 +2,10 @@ from index import InvertedIndex
 from itertools import product
 from item import Item
 from item import ItemSet
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
 
 def containsAllSubsets(candidate, candidates):
     for item in candidate:

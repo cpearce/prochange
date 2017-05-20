@@ -6,6 +6,10 @@ from item import Item
 from item import ItemSet
 import time
 import csv
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
 
 class FPNode:
     def __init__(self, item=None, count=0, parent=None):
