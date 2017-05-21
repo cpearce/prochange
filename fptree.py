@@ -300,7 +300,8 @@ def SortTest():
     print("Loading sort tree");
     tree = FPTree()
     for transaction in transactions:
-        # Insert unsorted.
+        # Insert reversed, since lexicographical order is already decreasing
+        # frequency order in this example.
         tree.insert(map(Item, reversed(transaction)))
     assert(str(expectedTree) != str(tree))
 
@@ -315,13 +316,37 @@ def SortTest():
     assert(tree.IsSorted())
     assert(str(expectedTree) == str(tree))
 
+    datasets = [
+        "datasets/UCI-zoo.csv",
+        "datasets/mushroom.csv",
+        "datasets/BMS-POS.csv",
+        "datasets/kosarak.csv",
+    ]
+
+    for csvFilePath in datasets:
+        print("Loading FPTree for {}".format(csvFilePath))
+        start = time.time()
+        tree = FPTree()
+        with open(csvFilePath, newline='') as csvfile:
+            for line in list(csv.reader(csvfile)):
+                # Insert sorted lexicographically
+                transaction = sorted(map(Item, line))
+                tree.insert(transaction)
+        duration = time.time() - start
+        print("Loaded in {:.2f} seconds".format(duration))
+        print("Sorting...")
+        start = time.time()
+        tree.sort()
+        duration = time.time() - start
+        print("Sorting took {:.2f} seconds".format(duration))
+        assert(tree.IsSorted())
 
 def StressTest():
     datasets = [
-        ("datasets/BMS-POS.csv", 0.02),
         ("datasets/UCI-zoo.csv", 0.2),
-        ("datasets/kosarak.csv", 0.01),
         ("datasets/mushroom.csv", 0.3),
+        ("datasets/BMS-POS.csv", 0.02),
+        ("datasets/kosarak.csv", 0.01),
     ]
 
     for (csvFilePath, minsup) in datasets:
