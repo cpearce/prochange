@@ -47,14 +47,10 @@ class FPTree:
         self.leaves = set()
 
     def insert(self, transaction, count=1):
-        self.insertAt(transaction, count, self.root)
-
-    def insertAt(self, transaction, count, parent):
         if DEBUG_ASSERTIONS:
             transaction = list(transaction)
-            print("insert {} at {}".format(str(transaction), parent))
             assert(count > 0)
-        node = parent
+        node = self.root
         self.numTransactions += count
         for item in transaction:
             self.itemCount[item] += count
@@ -85,30 +81,30 @@ class FPTree:
             if not leaf.isLeaf():
                 continue
             path = PathToRoot(leaf)
-            node = self.root
             path.reverse()
             if len(path) == 0:
                 continue
             spath = SortTransaction(path, self.itemCount)
-            if spath == path:
+            if path == spath:
                 # Path is already sorted.
                 continue
             count = leaf.count
-            leaves.extend(self.remove(path, count, node))
-            self.insertAt(spath, count, node)
+            leaves.extend(self.remove(path, count))
+            self.insert(spath, count)
         if DEBUG_ASSERTIONS:
             assert(self.IsSorted())
 
     # returns new leaves!
-    def remove(self, path, count, parent):
+    def remove(self, path, count):
         if DEBUG_ASSERTIONS:
-            print("remove {} at {} count {}".format(path, parent, count))
+            print("remove {} count {}".format(path, count))
             assert(all(map(lambda x: x.isLeaf(), self.leaves)))
             assert(all(map(lambda x: x.count > 0, self.leaves)))
         if len(path) == 0:
             return
         node = None
         new_leaves = []
+        parent = self.root
         for item in path:
             assert(item in parent.children)
             node = parent.children[item]
