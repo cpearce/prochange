@@ -11,6 +11,8 @@ import sys
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
 
+DEBUG_ASSERTIONS = False
+
 class FPNode:
     def __init__(self, item=None, count=0, parent=None):
         self.item = item
@@ -49,9 +51,10 @@ class FPTree:
         self.insertAt(transaction, count, self.root)
 
     def insertAt(self, transaction, count, parent):
-        transaction = list(transaction)
-        print("insert {} at {}".format(str(transaction), parent))
-        assert(count > 0)
+        if DEBUG_ASSERTIONS:
+            transaction = list(transaction)
+            print("insert {} at {}".format(str(transaction), parent))
+            assert(count > 0)
         node = parent
         self.numTransactions += count
         for item in transaction:
@@ -71,8 +74,9 @@ class FPTree:
                 node = node.children[item]
                 node.count += count
         # Ensure leaves are correctly tracked
-        assert(all(map(lambda x: x.isLeaf(), self.leaves)))
-        assert(all(map(lambda x: x.count > 0, self.leaves)))
+        if DEBUG_ASSERTIONS:
+            assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+            assert(all(map(lambda x: x.count > 0, self.leaves)))
 
     def sort(self):
         # Tracks node which have sorted paths *above* them.
@@ -111,9 +115,10 @@ class FPTree:
 
     # returns new leaves!
     def remove(self, path, count, parent):
-        print("remove {} at {} count {}".format(path, parent, count))
-        assert(all(map(lambda x: x.isLeaf(), self.leaves)))
-        assert(all(map(lambda x: x.count > 0, self.leaves)))
+        if DEBUG_ASSERTIONS:
+            print("remove {} at {} count {}".format(path, parent, count))
+            assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+            assert(all(map(lambda x: x.count > 0, self.leaves)))
         if len(path) == 0:
             return
         node = None
@@ -134,8 +139,9 @@ class FPTree:
                     new_leaves += [parent]
                 self.header[node.item].remove(node)
                 # Ensure leaves are correctly tracked
-                assert(all(map(lambda x: x.isLeaf(), self.leaves)))
-                assert(all(map(lambda x: x.count > 0, self.leaves)))
+                if DEBUG_ASSERTIONS:
+                    assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+                    assert(all(map(lambda x: x.count > 0, self.leaves)))
             parent = node
         return new_leaves         
 
