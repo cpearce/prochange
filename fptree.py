@@ -24,14 +24,21 @@ class FPNode:
     def isLeaf(self):
         return len(self.children) == 0
 
-    def __str__(self):
-        return ("[" + str(self.item) + ":" + str(self.count) + "]->("
-               + ','.join(map(lambda x: str(self.children[x]), self.children.keys()))
-               + ")")
+    def __str__(self, level=0):
+        ret = " "*level+str(self.item)+":" + str(self.count) + ("*" if self.isLeaf() else "") + "\n"
+        for node in self.children.values():
+            ret += node.__str__(level+1)
+        return ret
 
+    # def __str__(self):
+    #     return ("[" + str(self.item) + ":" + str(self.count) + "]->("
+    #            + ','.join(map(lambda x: str(self.children[x]), self.children.keys()))
+    #            + ")")
+    def __repr__(self):
+        return self.__str__()
 
 class FPTree:
-    def __init__(self, item=None, count=0):
+    def __init__(self, item=None):
         self.root = FPNode()
         self.header = {}
         self.itemCount = Counter()
@@ -39,7 +46,13 @@ class FPTree:
         self.leaves = set()
 
     def insert(self, transaction, count=1):
-        node = self.root
+        self.insertAt(transaction, count, self.root)
+
+    def insertAt(self, transaction, count, parent):
+        transaction = list(transaction)
+        print("insert {} at {}".format(str(transaction), parent))
+        assert(count > 0)
+        node = parent
         self.numTransactions += count
         for item in transaction:
             self.itemCount[item] += count
@@ -59,7 +72,81 @@ class FPTree:
                 node.count += count
         # Ensure leaves are correctly tracked
         assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+        assert(all(map(lambda x: x.count > 0, self.leaves)))
 
+    def sort(self):
+        # Tracks node which have sorted paths *above* them.
+        is_sorted = set([self.root])
+        # Make a copy, so that we don't lose leaves while modifying.
+        leaves = deque(self.leaves)
+        while len(leaves) > 0:
+            leaf = leaves.pop();
+            if not leaf.isLeaf():
+                continue
+            path = []
+            node = leaf
+            while not node in is_sorted:
+                path += [node.item]
+                node = node.parent
+            path.reverse()
+            # node is now the parent node of the path, below which the
+            # remaining path is unsorted.
+            if len(path) == 0:
+                continue
+            spath = SortTransaction(path, self.itemCount)
+            if spath == path:
+                # Path is already sorted. Add path's nodes to the set
+                # of sorted nodes.
+                n = leaf
+                while n is not node:
+                    assert(n not in is_sorted)
+                    is_sorted.add(n)
+                    n = n.parent
+                continue
+            count = leaf.count
+            leaves.extend(self.remove(path, count, node))
+            self.insertAt(spath, count, node)
+            # Need to tag nodes as sorted.
+        # assert(self.IsSorted())
+
+    # returns new leaves!
+    def remove(self, path, count, parent):
+        print("remove {} at {} count {}".format(path, parent, count))
+        assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+        assert(all(map(lambda x: x.count > 0, self.leaves)))
+        if len(path) == 0:
+            return
+        node = None
+        new_leaves = []
+        for item in path:
+            assert(item in parent.children)
+            node = parent.children[item]
+            assert(node.count >= count)
+            node.count -= count
+            self.itemCount[node.item] -= count
+            assert(node.count >= 0)
+            if node.count == 0:
+                del parent.children[item]
+                if node.isLeaf():
+                    self.leaves.remove(node)
+                if parent.isLeaf() and parent.count > 0:
+                    self.leaves.add(parent)
+                    new_leaves += [parent]
+                self.header[node.item].remove(node)
+                # Ensure leaves are correctly tracked
+                assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+                assert(all(map(lambda x: x.count > 0, self.leaves)))
+            parent = node
+        return new_leaves         
+
+    def IsSorted(self):
+        return all(map(self.IsSortedSubtree, self.root.children.values()))
+
+    def IsSortedSubtree(self, subtree):
+        f = self.itemCount[subtree.item];
+        if any(map(lambda node: self.itemCount[node.item] > f, subtree.children.values())):
+            return False
+        return all(map(self.IsSortedSubtree, subtree.children.values()))
 
     def hasSinglePath(self):
         node = self.root
@@ -72,7 +159,6 @@ class FPTree:
 
     def __str__(self):
         return "(" + str(self.root) + ")"
-
 
 def PathToRoot(node):
     path = []
@@ -135,6 +221,11 @@ def MineFPTree(transactions, minsup):
     mincount = minsup * tree.numTransactions
     return FPGrowth(tree, mincount, [])
 
+def SortTransaction(transaction, frequency):
+    if not isinstance(frequency, Counter):
+        raise TypeError("frequency must be Counter")
+    return sorted(transaction, key=lambda item:frequency[item], reverse=True)    
+
 def ConstructInitialTree(transactions):
     frequency = Counter()
     for transaction in transactions:
@@ -143,7 +234,7 @@ def ConstructInitialTree(transactions):
     tree = FPTree()
     for transaction in transactions:
         # sort by decreasing count.
-        tree.insert(sorted(map(Item, transaction), key=lambda item:frequency[item], reverse=True))
+        tree.insert(SortTransaction(map(Item, transaction), frequency))
     return tree
 
 def BasicSanityTest():
@@ -176,6 +267,43 @@ def BasicSanityTest():
 
     itemsets = MineFPTree(transactions, 2 / len(transactions))
     assert(set(itemsets) == expectedItemsets)
+
+def SortTest():
+    transactions = [
+        ["a", "b"],
+        ["b", "c", "d"],
+        ["a", "c", "d", "e"],
+        ["a", "d", "e"],
+        ["a", "b", "c"],
+        ["a", "b", "c", "d"],
+        ["a"],
+        ["a", "b", "c"],
+        ["a", "b", "d"],
+        ["b", "c", "e"],
+    ]
+
+    print("Loading expected tree");
+    expectedTree = ConstructInitialTree(transactions)
+    assert(expectedTree.IsSorted())
+
+    print("Loading sort tree");
+    tree = FPTree()
+    for transaction in transactions:
+        # Insert unsorted.
+        tree.insert(map(Item, reversed(transaction)))
+    assert(str(expectedTree) != str(tree))
+
+    print("\nTree before sort {}\n".format(tree))
+
+    print("\nSorting tree");
+    tree.sort()
+    print("\nObserved {}\n".format(tree))
+
+    print("\nExpected {}\n".format(expectedTree))
+
+    assert(tree.IsSorted())
+    assert(str(expectedTree) == str(tree))
+
 
 def StressTest():
     datasets = [
@@ -217,4 +345,5 @@ def StressTest():
 
 if __name__ == "__main__":
     BasicSanityTest()
-    StressTest()
+    SortTest()
+    #StressTest()
