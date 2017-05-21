@@ -135,7 +135,7 @@ def ConstructInitialTree(transactions):
         tree.insert(sorted(map(Item, transaction), key=lambda item:frequency[item], reverse=True))
     return tree
 
-def TestFPTree():
+def BasicSanityTest():
     # Basic sanity check of know resuts.
     transactions = [
         ["a", "b"],
@@ -166,6 +166,7 @@ def TestFPTree():
     itemsets = MineFPTree(transactions, 2 / len(transactions))
     assert(set(itemsets) == expectedItemsets)
 
+def StressTest():
     datasets = [
         ("datasets/BMS-POS.csv", 0.02),
         ("datasets/UCI-zoo.csv", 0.2),
@@ -204,4 +205,5 @@ def TestFPTree():
         print("")
 
 if __name__ == "__main__":
-    TestFPTree()
+    BasicSanityTest()
+    StressTest()
