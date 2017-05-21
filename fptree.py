@@ -14,11 +14,12 @@ if sys.version_info[0] < 3:
 DEBUG_ASSERTIONS = False
 
 class FPNode:
-    def __init__(self, item=None, count=0, parent=None):
+    def __init__(self, item=None, count=0, parent=None, generation=0):
         self.item = item
         self.count = count
         self.children = {}
         self.parent = parent
+        self.generation = generation
 
     def isRoot(self):
         return self.parent is None
@@ -27,7 +28,10 @@ class FPNode:
         return len(self.children) == 0
 
     def __str__(self, level=0):
-        ret = " "*level+str(self.item)+":" + str(self.count) + ("*" if self.isLeaf() else "") + "\n"
+        ret = " "*level+str(self.item)+":" + str(self.count)
+        ret += ("*" if self.isLeaf() else "")
+        # ret += "[" + str(self.generation) + "]"
+        ret += "\n"
         for node in self.children.values():
             ret += node.__str__(level+1)
         return ret
@@ -46,11 +50,12 @@ class FPTree:
         self.itemCount = Counter()
         self.numTransactions = 0
         self.leaves = set()
+        self.generation = 0
 
-    def insert(self, transaction, count=1):
-        self.insertAt(transaction, count, self.root)
+    def insert(self, transaction, count=1, generation=0):
+        self.insertAt(transaction, count, self.root, generation)
 
-    def insertAt(self, transaction, count, parent):
+    def insertAt(self, transaction, count, parent, generation):
         if DEBUG_ASSERTIONS:
             transaction = list(transaction)
             print("insert {} at {}".format(str(transaction), parent))
@@ -146,13 +151,13 @@ class FPTree:
         return new_leaves         
 
     def IsSorted(self):
-        return all(map(self.IsSortedSubtree, self.root.children.values()))
-
-    def IsSortedSubtree(self, subtree):
-        f = self.itemCount[subtree.item];
-        if any(map(lambda node: self.itemCount[node.item] > f, subtree.children.values())):
-            return False
-        return all(map(self.IsSortedSubtree, subtree.children.values()))
+        for leaf in self.leaves:
+            node = leaf
+            while node.parent is not self.root:
+                if self.itemCount[node.item] > self.itemCount[node.parent.item]:
+                    return False
+                node = node.parent
+        return True
 
     def hasSinglePath(self):
         node = self.root
