@@ -73,8 +73,8 @@ class FPTree:
                 node = child
                 self.leaves.add(node)
                 if item not in self.header:
-                    self.header[item] = []
-                self.header[item] += [node]
+                    self.header[item] = set()
+                self.header[item].add(node)
             else:
                 node = node.children[item]
                 node.count += count
