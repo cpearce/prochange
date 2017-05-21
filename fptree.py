@@ -14,12 +14,11 @@ if sys.version_info[0] < 3:
 DEBUG_ASSERTIONS = False
 
 class FPNode:
-    def __init__(self, item=None, count=0, parent=None, generation=0):
+    def __init__(self, item=None, count=0, parent=None):
         self.item = item
         self.count = count
         self.children = {}
         self.parent = parent
-        self.generation = generation
 
     def isRoot(self):
         return self.parent is None
@@ -30,7 +29,6 @@ class FPNode:
     def __str__(self, level=0):
         ret = " "*level+str(self.item)+":" + str(self.count)
         ret += ("*" if self.isLeaf() else "")
-        # ret += "[" + str(self.generation) + "]"
         ret += "\n"
         for node in self.children.values():
             ret += node.__str__(level+1)
@@ -50,12 +48,11 @@ class FPTree:
         self.itemCount = Counter()
         self.numTransactions = 0
         self.leaves = set()
-        self.generation = 0
 
-    def insert(self, transaction, count=1, generation=0):
-        self.insertAt(transaction, count, self.root, generation)
+    def insert(self, transaction, count=1):
+        self.insertAt(transaction, count, self.root)
 
-    def insertAt(self, transaction, count, parent, generation):
+    def insertAt(self, transaction, count, parent):
         if DEBUG_ASSERTIONS:
             transaction = list(transaction)
             print("insert {} at {}".format(str(transaction), parent))
@@ -84,39 +81,26 @@ class FPTree:
             assert(all(map(lambda x: x.count > 0, self.leaves)))
 
     def sort(self):
-        # Tracks node which have sorted paths *above* them.
-        is_sorted = set([self.root])
         # Make a copy, so that we don't lose leaves while modifying.
         leaves = deque(self.leaves)
         while len(leaves) > 0:
             leaf = leaves.pop();
             if not leaf.isLeaf():
                 continue
-            path = []
-            node = leaf
-            while not node in is_sorted:
-                path += [node.item]
-                node = node.parent
+            path = PathToRoot(leaf)
+            node = self.root
             path.reverse()
-            # node is now the parent node of the path, below which the
-            # remaining path is unsorted.
             if len(path) == 0:
                 continue
             spath = SortTransaction(path, self.itemCount)
             if spath == path:
-                # Path is already sorted. Add path's nodes to the set
-                # of sorted nodes.
-                n = leaf
-                while n is not node:
-                    assert(n not in is_sorted)
-                    is_sorted.add(n)
-                    n = n.parent
+                # Path is already sorted.
                 continue
             count = leaf.count
             leaves.extend(self.remove(path, count, node))
             self.insertAt(spath, count, node)
-            # Need to tag nodes as sorted.
-        # assert(self.IsSorted())
+        if DEBUG_ASSERTIONS:
+            assert(self.IsSorted())
 
     # returns new leaves!
     def remove(self, path, count, parent):
