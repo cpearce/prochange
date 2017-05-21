@@ -78,8 +78,8 @@ class FPTree:
             else:
                 node = node.children[item]
                 node.count += count
-        # Ensure leaves are correctly tracked
         if DEBUG_ASSERTIONS:
+            # Ensure leaves are correctly tracked
             assert(all(map(lambda x: x.isLeaf(), self.leaves)))
             assert(all(map(lambda x: x.count > 0, self.leaves)))
 
