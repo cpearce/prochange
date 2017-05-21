@@ -27,17 +27,14 @@ class FPNode:
         return len(self.children) == 0
 
     def __str__(self, level=0):
-        ret = " "*level+str(self.item)+":" + str(self.count)
-        ret += ("*" if self.isLeaf() else "")
+        ret = ("[root]" if self.isRoot()
+            else " " * level + str(self.item) + ":" + str(self.count))
+        ret += "*" if self.isLeaf() else ""
         ret += "\n"
         for node in self.children.values():
             ret += node.__str__(level+1)
         return ret
 
-    # def __str__(self):
-    #     return ("[" + str(self.item) + ":" + str(self.count) + "]->("
-    #            + ','.join(map(lambda x: str(self.children[x]), self.children.keys()))
-    #            + ")")
     def __repr__(self):
         return self.__str__()
 
