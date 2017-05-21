@@ -359,4 +359,4 @@ def StressTest():
 if __name__ == "__main__":
     BasicSanityTest()
     SortTest()
-    #StressTest()
+    StressTest()
