@@ -21,6 +21,9 @@ class FPNode:
     def isRoot(self):
         return self.parent is None
 
+    def isLeaf(self):
+        return len(self.children) == 0
+
     def __str__(self):
         return ("[" + str(self.item) + ":" + str(self.count) + "]->("
                + ','.join(map(lambda x: str(self.children[x]), self.children.keys()))
@@ -33,6 +36,7 @@ class FPTree:
         self.header = {}
         self.itemCount = Counter()
         self.numTransactions = 0
+        self.leaves = set()
 
     def insert(self, transaction, count=1):
         node = self.root
@@ -40,15 +44,22 @@ class FPTree:
         for item in transaction:
             self.itemCount[item] += count
             if item not in node.children:
+                if node.isLeaf() and not node.isRoot():
+                    # Node was a leaf, but won't be after acquiring a child.
+                    self.leaves.remove(node)
                 child = FPNode(item, count, node)
                 node.children[item] = child
                 node = child
+                self.leaves.add(node)
                 if item not in self.header:
                     self.header[item] = []
                 self.header[item] += [node]
             else:
                 node = node.children[item]
                 node.count += count
+        # Ensure leaves are correctly tracked
+        assert(all(map(lambda x: x.isLeaf(), self.leaves)))
+
 
     def hasSinglePath(self):
         node = self.root
