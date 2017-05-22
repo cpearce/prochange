@@ -50,6 +50,7 @@ class FPTree:
         if DEBUG_ASSERTIONS:
             transaction = list(transaction)
             assert(count > 0)
+            print("insert {} count {}".format(transaction, count))
         node = self.root
         self.numTransactions += count
         for item in transaction:
