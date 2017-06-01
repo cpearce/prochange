@@ -199,7 +199,7 @@ def PatternsInTree(tree, minCount, path):
         return []
     return PatternsInPath(tree, FirstChild(tree.root), minCount, path);
 
-def FPGrowth(tree, minCount, path):
+def FPGrowth(tree, minCount, path=[]):
     # If tree has only one branch, we can skip creating a tree and just add
     # all combinations of items in the branch.
     if tree.hasSinglePath():
@@ -223,7 +223,7 @@ def FPGrowth(tree, minCount, path):
 def MineFPTree(transactions, minsup):
     tree = ConstructInitialTree(transactions)
     mincount = minsup * tree.numTransactions
-    return FPGrowth(tree, mincount, [])
+    return FPGrowth(tree, mincount)
 
 def SortTransaction(transaction, frequency):
     if not isinstance(frequency, Counter):
