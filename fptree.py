@@ -75,7 +75,20 @@ class FPTree:
             assert(all(map(lambda x: x.count > 0, self.leaves)))
 
     def sort(self):
-        # Make a copy, so that we don't lose leaves while modifying.
+        # To sort the tree, for each leaf in the tree, find the path to the
+        # root, remove each such path, sort the path so that the items are
+        # in non-increasing order order of frequency, and re-insert the
+        # sorted path. The list of leaves can change while sorting; removing
+        # a path may result in new leaves being created if the removed path
+        # overlapped another path. We need to include the paths from these
+        # new leaves in the sort too. The other way we create leaves while
+        # sorting the tree is when we insert a sorted path; if not all items
+        # overlap with other paths, we'll create a new leaf. The paths for
+        # these leaves are sorted, so we don't need to include these paths
+        # starting at such new leaves in the sort. So the set of leaves
+        # changes while we're sorting the tree. Python can't iterate over
+        # a mutating set, so we copy the list of leaves into a deque, and
+        # push new leaves into that.
         leaves = deque(self.leaves)
         while len(leaves) > 0:
             leaf = leaves.pop();
@@ -90,13 +103,15 @@ class FPTree:
                 # Path is already sorted.
                 continue
             count = leaf.count
-            leaves.extend(self.remove(path, count))
+            new_leaves = self.remove(path, count)
+            leaves.extend(new_leaves)
             self.insert(spath, count)
         if DEBUG_ASSERTIONS:
             assert(self.IsSorted())
 
-    # returns new leaves!
     def remove(self, path, count):
+        # Removes a path of items from the tree. Returns list of newly created
+        # leaves.
         if DEBUG_ASSERTIONS:
             print("remove {} count {}".format(path, count))
             assert(all(map(lambda x: x.isLeaf(), self.leaves)))
