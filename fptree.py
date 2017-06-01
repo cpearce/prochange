@@ -336,10 +336,10 @@ def SortTest():
 
 def StressTest():
     datasets = [
-        ("datasets/UCI-zoo.csv", 0.2),
-        ("datasets/mushroom.csv", 0.3),
-        ("datasets/BMS-POS.csv", 0.02),
-        ("datasets/kosarak.csv", 0.01),
+        ("datasets/UCI-zoo.csv", 0.3),
+        ("datasets/mushroom.csv", 0.4),
+        ("datasets/BMS-POS.csv", 0.05),
+        ("datasets/kosarak.csv", 0.05),
     ]
 
     for (csvFilePath, minsup) in datasets:
