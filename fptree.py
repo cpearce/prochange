@@ -230,11 +230,15 @@ def SortTransaction(transaction, frequency):
         raise TypeError("frequency must be Counter")
     return sorted(transaction, key=lambda item:frequency[item], reverse=True)    
 
-def ConstructInitialTree(transactions):
+def CountItemFrequencyIn(transactions):
     frequency = Counter()
     for transaction in transactions:
         for item in map(Item, transaction):
-            frequency[item] +=1
+            frequency[item] += 1
+    return frequency
+
+def ConstructInitialTree(transactions):
+    frequency = CountItemFrequencyIn(transactions)
     tree = FPTree()
     for transaction in transactions:
         # sort by decreasing count.
