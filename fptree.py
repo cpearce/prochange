@@ -42,7 +42,7 @@ class FPNode:
 
 
 class FPTree:
-    def __init__(self, item=None):
+    def __init__(self):
         self.root = FPNode()
         self.header = {}
         self.item_count = Counter()
@@ -123,7 +123,6 @@ class FPTree:
             print("remove {} count {}".format(path, count))
         if len(path) == 0:
             return
-        node = None
         new_leaves = []
         parent = self.root
         for item in path:
@@ -203,11 +202,11 @@ def path_to_root(node):
 
 
 def construct_conditional_tree(tree, item):
-    conditionalTree = FPTree()
+    conditional_tree = FPTree()
     for node in tree.header[item]:
         path = path_to_root(node.parent)
-        conditionalTree.insert(reversed(path), node.count)
-    return conditionalTree
+        conditional_tree.insert(reversed(path), node.count)
+    return conditional_tree
 
 
 def first_child(node):
@@ -216,12 +215,12 @@ def first_child(node):
 
 def patterns_in_path(tree, node, min_count, path):
     itemsets = []
-    isLarge = tree.item_count[node.item] >= min_count
-    if isLarge:
+    is_large = tree.item_count[node.item] >= min_count
+    if is_large:
         itemsets += [frozenset(path + [node.item])]
     if len(node.children) > 0:
         child = first_child(node)
-        if isLarge:
+        if is_large:
             itemsets += patterns_in_path(tree,
                                          child,
                                          min_count,
@@ -384,7 +383,7 @@ def test_basic_sanity():
         ["a", "b", "d"],
         ["b", "c", "e"],
     ]
-    expectedItemsets = set([
+    expected_itemsets = {
         ItemSet("e"), ItemSet("de"), ItemSet("ade"), ItemSet("ce"),
         ItemSet("ae"),
 
@@ -396,10 +395,10 @@ def test_basic_sanity():
         ItemSet("b"), ItemSet("ab"),
 
         ItemSet("a"),
-    ])
+    }
 
     itemsets = mine_fp_tree(transactions, 2 / len(transactions))
-    assert(set(itemsets) == expectedItemsets)
+    assert(set(itemsets) == expected_itemsets)
 
 
 def test_tree_sorting():
