@@ -162,18 +162,13 @@ class FPTree:
         return new_leaves         
 
     def IsSorted(self):
-        is_sorted = True
         for leaf in self.leaves:
             node = leaf
             while node.parent is not self.root:
-                if node.item not in node.parent.children:
-                    print("Node {} is not in parent!".format(node))
                 if self.itemCount[node.item] > self.itemCount[node.parent.item]:
-                    print("Not sorted! node={},{} parent={},{}".format(node.item, self.itemCount[node.item], node.parent.item, self.itemCount[node.parent.item]))
-                    # return False
-                    is_sorted = False
+                    return False
                 node = node.parent
-        return is_sorted
+        return True
 
     def IsConnected(self):
         is_connected = True
@@ -181,10 +176,9 @@ class FPTree:
             node = leaf
             while node is not self.root:
                 if node.item not in node.parent.children:
-                    print("Node {} is not in parent {} (children={})!".format(node, node.parent, node.parent.children))
-                    is_connected = False
+                    return False
                 node = node.parent
-        return is_connected        
+        return True
 
     def header_list_sane(self):
         for (item, nodes) in self.header.items():
