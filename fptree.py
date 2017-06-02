@@ -269,8 +269,17 @@ def MineFPTree(transactions, minsup):
     return FPGrowth(tree, mincount)
 
 def SortTransaction(transaction, frequency):
+    # For based on non-increasing item frequency. We need the sort to tie
+    # break consistently; so that when two items have the same frequency,
+    # we always sort them into the same order. This is so that when we're
+    # sorting the trees and we re-insert sorted paths, that the path
+    # overlap in a consistent way. We achieve this ordering by sorting
+    # twice; once lexicographically, and then a second time in order of
+    # frequency. This works because Python's sort is stable; items that
+    # compare equal aren't permuted.
+    transaction = sorted(transaction)
     if frequency is None:
-        return sorted(transaction)
+        return transaction
     if not isinstance(frequency, Counter):
         raise TypeError("frequency must be Counter")
     return sorted(transaction, key=lambda item:frequency[item], reverse=True)    
