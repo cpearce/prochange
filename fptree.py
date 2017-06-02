@@ -208,35 +208,35 @@ def construct_conditional_tree(tree, item):
 def first_child(node):
     return list(node.children.values())[0]
 
-def patterns_in_path(tree, node, minCount, path):
+def patterns_in_path(tree, node, min_count, path):
     itemsets = []
-    isLarge = tree.item_count[node.item] >= minCount
+    isLarge = tree.item_count[node.item] >= min_count
     if isLarge:
         itemsets += [frozenset(path + [node.item])]
     if len(node.children) > 0:
         child = first_child(node)
         if isLarge:
-            itemsets += patterns_in_path(tree, child, minCount, path + [node.item])
-        itemsets += patterns_in_path(tree, child, minCount, path)
+            itemsets += patterns_in_path(tree, child, min_count, path + [node.item])
+        itemsets += patterns_in_path(tree, child, min_count, path)
     return itemsets
 
-def patterns_in_tree(tree, minCount, path):
+def patterns_in_tree(tree, min_count, path):
     assert(tree.has_single_path())
     if len(tree.root.children) == 0:
         return []
-    return patterns_in_path(tree, first_child(tree.root), minCount, path);
+    return patterns_in_path(tree, first_child(tree.root), min_count, path);
 
-def fp_growth(tree, minCount, path=[]):
+def fp_growth(tree, min_count, path=[]):
     # If tree has only one branch, we can skip creating a tree and just add
     # all combinations of items in the branch.
     if tree.has_single_path():
-        rv = patterns_in_tree(tree, minCount, path);
+        rv = patterns_in_tree(tree, min_count, path);
         return rv
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
     itemsets = []
     for item in sorted(tree.item_count.keys(), key=lambda item:tree.item_count[item]):
-        if tree.item_count[item] < minCount:
+        if tree.item_count[item] < min_count:
             # Item is no longer frequent on this path, skip.
             continue
         # Record item as part of the path.
@@ -244,13 +244,13 @@ def fp_growth(tree, minCount, path=[]):
         # Build conditional tree of all patterns in this tree which start
         # with this item.
         conditionalTree = construct_conditional_tree(tree, item)
-        itemsets += fp_growth(conditionalTree, minCount, path + [item])
+        itemsets += fp_growth(conditionalTree, min_count, path + [item])
     return itemsets
 
 def mine_fp_tree(transactions, min_support):
     tree = construct_initial_tree(transactions)
-    mincount = min_support * tree.num_transactions
-    return fp_growth(tree, mincount)
+    min_count = min_support * tree.num_transactions
+    return fp_growth(tree, min_count)
 
 def sort_transaction(transaction, frequency):
     # For based on non-increasing item frequency. We need the sort to tie
@@ -310,12 +310,12 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             if not did_sort:
                 tree.sort()
                 frequency = tree.item_count.copy()
-            mincount = min_support * tree.num_transactions
+            min_count = min_support * tree.num_transactions
             assert(tree.num_transactions == len(sliding_window))
             assert(len(sliding_window) == window_size)
             assert(tree.is_sorted())
             assert(tree.is_connected())
-            patterns = fp_growth(tree, mincount)
+            patterns = fp_growth(tree, min_count)
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
 
 def test_cp_tree_stream():
