@@ -236,7 +236,7 @@ def patterns_in_tree(tree, min_count, path):
     return patterns_in_path(tree, first_child(tree.root), min_count, path)
 
 
-def fp_growth(tree, min_count, path=[]):
+def fp_growth(tree, min_count, path):
     # If tree has only one branch, we can skip creating a tree and just add
     # all combinations of items in the branch.
     if tree.has_single_path():
@@ -263,7 +263,7 @@ def fp_growth(tree, min_count, path=[]):
 def mine_fp_tree(transactions, min_support):
     tree = construct_initial_tree(transactions)
     min_count = min_support * tree.num_transactions
-    return fp_growth(tree, min_count)
+    return fp_growth(tree, min_count, [])
 
 
 def sort_transaction(transaction, frequency):
@@ -333,7 +333,7 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             assert(len(sliding_window) == window_size)
             assert(tree.is_sorted())
             assert(tree.is_connected())
-            patterns = fp_growth(tree, min_count)
+            patterns = fp_growth(tree, min_count, [])
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
 
 
