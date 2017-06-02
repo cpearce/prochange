@@ -247,7 +247,7 @@ def fp_growth(tree, min_count, path):
     itemsets = []
     for item in sorted(
             tree.item_count.keys(),
-            key=lambda item: tree.item_count[item]):
+            key=lambda i: tree.item_count[i]):
         if tree.item_count[item] < min_count:
             # Item is no longer frequent on this path, skip.
             continue
@@ -255,8 +255,8 @@ def fp_growth(tree, min_count, path):
         itemsets += [frozenset(path + [item])]
         # Build conditional tree of all patterns in this tree which start
         # with this item.
-        conditionalTree = construct_conditional_tree(tree, item)
-        itemsets += fp_growth(conditionalTree, min_count, path + [item])
+        conditional_tree = construct_conditional_tree(tree, item)
+        itemsets += fp_growth(conditional_tree, min_count, path + [item])
     return itemsets
 
 
@@ -360,7 +360,7 @@ def test_cp_tree_stream():
                 print("Window {} + {} / {}".format(window_start_index,
                                                    window_size, len(transactions)))
                 window = transactions[window_start_index:
-                                      window_start_index + window_length];
+                                      window_start_index + window_length]
                 fptree_itemsets = mine_fp_tree(window, min_support)
                 print(
                     "fptree produced {} itemsets, cptree produced {} itemsets".format(
@@ -415,18 +415,18 @@ def test_tree_sorting():
         ["b", "c", "e"],
     ]
 
-    expectedTree = construct_initial_tree(transactions)
-    assert(expectedTree.is_sorted())
+    expected_tree = construct_initial_tree(transactions)
+    assert(expected_tree.is_sorted())
 
     tree = FPTree()
     for transaction in transactions:
         # Insert reversed, since lexicographical order is already decreasing
         # frequency order in this example.
         tree.insert(map(Item, reversed(transaction)))
-    assert(str(expectedTree) != str(tree))
+    assert(str(expected_tree) != str(tree))
     tree.sort()
     assert(tree.is_sorted())
-    assert(str(expectedTree) == str(tree))
+    assert(str(expected_tree) == str(tree))
 
     datasets = [
         "datasets/UCI-zoo.csv",
@@ -477,7 +477,6 @@ def test_stress():
 
         print("Running FPTree for {}".format(csvFilePath))
         start = time.time()
-        fptree_itemsets = []
         with open(csvFilePath, newline='') as csvfile:
             transactions = list(csv.reader(csvfile))
             fptree_itemsets = mine_fp_tree(transactions, min_support)
