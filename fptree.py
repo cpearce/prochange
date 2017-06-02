@@ -247,9 +247,9 @@ def fp_growth(tree, minCount, path=[]):
         itemsets += fp_growth(conditionalTree, minCount, path + [item])
     return itemsets
 
-def mine_fp_tree(transactions, minsup):
+def mine_fp_tree(transactions, min_support):
     tree = construct_initial_tree(transactions)
-    mincount = minsup * tree.num_transactions
+    mincount = min_support * tree.num_transactions
     return fp_growth(tree, mincount)
 
 def sort_transaction(transaction, frequency):
@@ -283,7 +283,7 @@ def construct_initial_tree(transactions):
     return tree
 
 # Yields (window_start_index, window_length, patterns)
-def mine_cp_tree_stream(transactions, minsup, sort_interval, window_size):
+def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
     tree = FPTree()
     sliding_window = deque();
     frequency = None
@@ -310,7 +310,7 @@ def mine_cp_tree_stream(transactions, minsup, sort_interval, window_size):
             if not did_sort:
                 tree.sort()
                 frequency = tree.item_count.copy()
-            mincount = minsup * tree.num_transactions
+            mincount = min_support * tree.num_transactions
             assert(tree.num_transactions == len(sliding_window))
             assert(len(sliding_window) == window_size)
             assert(tree.is_sorted())
@@ -319,21 +319,21 @@ def mine_cp_tree_stream(transactions, minsup, sort_interval, window_size):
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
 
 def test_cp_tree_stream():
-    # (csvFilePath, minsup, sort_interval, window_size)
+    # (csvFilePath, min_support, sort_interval, window_size)
     datasets = [
         ("datasets/UCI-zoo.csv", 0.3, 10, 20),
         ("datasets/mushroom.csv", 0.4, 500, 500),
         # ("datasets/BMS-POS.csv", 0.05, 50000, 50000),
     ]
-    for (csvFilePath, minsup, sort_interval, window_size) in datasets:
+    for (csvFilePath, min_support, sort_interval, window_size) in datasets:
         with open(csvFilePath, newline='') as csvfile:
             print("test_cp_tree_stream {}".format(csvFilePath))
             transactions = list(csv.reader(csvfile))
             print("Loaded data file, {} lines".format(len(transactions)))
-            for (window_start_index, window_length, cptree_itemsets) in mine_cp_tree_stream(transactions, minsup, sort_interval, window_size):
+            for (window_start_index, window_length, cptree_itemsets) in mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
                 print("Window {} + {} / {}".format(window_start_index, window_size, len(transactions)))
                 window = transactions[window_start_index:window_start_index + window_length];
-                fptree_itemsets = mine_fp_tree(window, minsup)
+                fptree_itemsets = mine_fp_tree(window, min_support)
                 print("fptree produced {} itemsets, cptree produced {} itemsets".format(len(fptree_itemsets), len(cptree_itemsets)))
                 assert(set(cptree_itemsets) == set(fptree_itemsets))
 
@@ -429,13 +429,13 @@ def test_stress():
         # ("datasets/kosarak.csv", 0.05),
     ]
 
-    for (csvFilePath, minsup) in datasets:
+    for (csvFilePath, min_support) in datasets:
         # Run Apriori and FP-Growth and assert both have the same results.
         print("Running Apriori for {}".format(csvFilePath))
         start = time.time()
         index = InvertedIndex();
         index.loadCSV(csvFilePath)
-        apriori_itemsets = Apriori(index, minsup)
+        apriori_itemsets = Apriori(index, min_support)
         apriori_duration = time.time() - start
         print("Apriori complete. Generated {} itemsets in {:.2f} seconds".format(len(apriori_itemsets), apriori_duration))
 
@@ -444,7 +444,7 @@ def test_stress():
         fptree_itemsets = []
         with open(csvFilePath, newline='') as csvfile:
             transactions = list(csv.reader(csvfile))
-            fptree_itemsets = mine_fp_tree(transactions, minsup)
+            fptree_itemsets = mine_fp_tree(transactions, min_support)
         fptree_duration = time.time() - start
         print("fp_growth complete. Generated {} itemsets in {:.2f} seconds".format(len(fptree_itemsets), fptree_duration))
 
