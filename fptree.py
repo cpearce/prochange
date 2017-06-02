@@ -334,8 +334,7 @@ def CPTreeTest():
     datasets = [
         ("datasets/UCI-zoo.csv", 0.3, 10, 20),
         ("datasets/mushroom.csv", 0.4, 500, 500),
-        ("datasets/BMS-POS.csv", 0.05, 50000, 50000),
-        # ("datasets/kosarak.csv", 0.05),
+        # ("datasets/BMS-POS.csv", 0.05, 50000, 50000),
     ]
     for (csvFilePath, minsup, sort_interval, window_size) in datasets:
         with open(csvFilePath, newline='') as csvfile:
@@ -421,8 +420,8 @@ def SortTest():
     datasets = [
         "datasets/UCI-zoo.csv",
         "datasets/mushroom.csv",
-        "datasets/BMS-POS.csv",
-        "datasets/kosarak.csv",
+        # "datasets/BMS-POS.csv",
+        # "datasets/kosarak.csv",
     ]
 
     for csvFilePath in datasets:
@@ -447,8 +446,8 @@ def StressTest():
     datasets = [
         ("datasets/UCI-zoo.csv", 0.3),
         ("datasets/mushroom.csv", 0.4),
-        ("datasets/BMS-POS.csv", 0.05),
-        ("datasets/kosarak.csv", 0.05),
+        # ("datasets/BMS-POS.csv", 0.05),
+        # ("datasets/kosarak.csv", 0.05),
     ]
 
     for (csvFilePath, minsup) in datasets:
@@ -474,6 +473,7 @@ def StressTest():
             print("SUCCESS({}): Apriori and fptree results match".format(csvFilePath))
         else:
             print("FAIL({}): Apriori and fptree results differ!".format(csvFilePath))
+        assert(set(fptree_itemsets) == set(apriori_itemsets))
 
         if apriori_duration > fptree_duration:
             print("FPTree was faster by {:.2f} seconds".format(apriori_duration - fptree_duration))
@@ -482,8 +482,8 @@ def StressTest():
         print("")
 
 if __name__ == "__main__":
-    # BasicSanityTest()
-    # SortTest()
-    # StressTest()
+    BasicSanityTest()
+    SortTest()
+    StressTest()
     CPTreeTest();
     
