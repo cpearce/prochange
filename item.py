@@ -6,6 +6,7 @@ if sys.version_info[0] < 3:
 itemNameToId = {}
 itemIdToName = {}
 
+
 class Item:
     def __init__(self, name):
         if not isinstance(name, str):
@@ -31,6 +32,7 @@ class Item:
 
     def __hash__(self):
         return self.id
+
 
 def ItemSet(lst):
     return frozenset(map(Item, lst))

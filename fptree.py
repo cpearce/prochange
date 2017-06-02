@@ -14,6 +14,7 @@ if sys.version_info[0] < 3:
 DEBUG_ASSERTIONS = False
 LOG_TREE_MUTATIONS = False
 
+
 class FPNode:
     def __init__(self, item=None, count=0, parent=None):
         self.item = item
@@ -29,15 +30,16 @@ class FPNode:
 
     def __str__(self, level=0):
         ret = ("[root]" if self.is_root()
-            else " " * level + str(self.item) + ":" + str(self.count))
+               else " " * level + str(self.item) + ":" + str(self.count))
         ret += "*" if self.is_leaf() else ""
         ret += "\n"
         for node in self.children.values():
-            ret += node.__str__(level+1)
+            ret += node.__str__(level + 1)
         return ret
 
     def __repr__(self):
         return self.__str__()
+
 
 class FPTree:
     def __init__(self, item=None):
@@ -93,7 +95,7 @@ class FPTree:
         # push new leaves into that.
         leaves = deque(self.leaves)
         while len(leaves) > 0:
-            leaf = leaves.pop();
+            leaf = leaves.pop()
             if not leaf.is_leaf():
                 continue
             path = path_to_root(leaf)
@@ -191,12 +193,14 @@ class FPTree:
     def __str__(self):
         return "(" + str(self.root) + ")"
 
+
 def path_to_root(node):
     path = []
     while not node.is_root():
         path += [node.item]
         node = node.parent
     return path
+
 
 def construct_conditional_tree(tree, item):
     conditionalTree = FPTree()
@@ -205,8 +209,10 @@ def construct_conditional_tree(tree, item):
         conditionalTree.insert(reversed(path), node.count)
     return conditionalTree
 
+
 def first_child(node):
     return list(node.children.values())[0]
+
 
 def patterns_in_path(tree, node, min_count, path):
     itemsets = []
@@ -216,26 +222,33 @@ def patterns_in_path(tree, node, min_count, path):
     if len(node.children) > 0:
         child = first_child(node)
         if isLarge:
-            itemsets += patterns_in_path(tree, child, min_count, path + [node.item])
+            itemsets += patterns_in_path(tree,
+                                         child,
+                                         min_count,
+                                         path + [node.item])
         itemsets += patterns_in_path(tree, child, min_count, path)
     return itemsets
+
 
 def patterns_in_tree(tree, min_count, path):
     assert(tree.has_single_path())
     if len(tree.root.children) == 0:
         return []
-    return patterns_in_path(tree, first_child(tree.root), min_count, path);
+    return patterns_in_path(tree, first_child(tree.root), min_count, path)
+
 
 def fp_growth(tree, min_count, path=[]):
     # If tree has only one branch, we can skip creating a tree and just add
     # all combinations of items in the branch.
     if tree.has_single_path():
-        rv = patterns_in_tree(tree, min_count, path);
+        rv = patterns_in_tree(tree, min_count, path)
         return rv
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
     itemsets = []
-    for item in sorted(tree.item_count.keys(), key=lambda item:tree.item_count[item]):
+    for item in sorted(
+            tree.item_count.keys(),
+            key=lambda item: tree.item_count[item]):
         if tree.item_count[item] < min_count:
             # Item is no longer frequent on this path, skip.
             continue
@@ -247,10 +260,12 @@ def fp_growth(tree, min_count, path=[]):
         itemsets += fp_growth(conditionalTree, min_count, path + [item])
     return itemsets
 
+
 def mine_fp_tree(transactions, min_support):
     tree = construct_initial_tree(transactions)
     min_count = min_support * tree.num_transactions
     return fp_growth(tree, min_count)
+
 
 def sort_transaction(transaction, frequency):
     # For based on non-increasing item frequency. We need the sort to tie
@@ -266,7 +281,8 @@ def sort_transaction(transaction, frequency):
         return transaction
     if not isinstance(frequency, Counter):
         raise TypeError("frequency must be Counter")
-    return sorted(transaction, key=lambda item:frequency[item], reverse=True)
+    return sorted(transaction, key=lambda item: frequency[item], reverse=True)
+
 
 def count_item_frequency_in(transactions):
     frequency = Counter()
@@ -274,6 +290,7 @@ def count_item_frequency_in(transactions):
         for item in map(Item, transaction):
             frequency[item] += 1
     return frequency
+
 
 def construct_initial_tree(transactions):
     frequency = count_item_frequency_in(transactions)
@@ -283,9 +300,11 @@ def construct_initial_tree(transactions):
     return tree
 
 # Yields (window_start_index, window_length, patterns)
+
+
 def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
     tree = FPTree()
-    sliding_window = deque();
+    sliding_window = deque()
     frequency = None
     num_transactions = 0
     for transaction in transactions:
@@ -318,6 +337,7 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             patterns = fp_growth(tree, min_count)
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
 
+
 def test_cp_tree_stream():
     # (csvFilePath, min_support, sort_interval, window_size)
     datasets = [
@@ -330,11 +350,23 @@ def test_cp_tree_stream():
             print("test_cp_tree_stream {}".format(csvFilePath))
             transactions = list(csv.reader(csvfile))
             print("Loaded data file, {} lines".format(len(transactions)))
-            for (window_start_index, window_length, cptree_itemsets) in mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
-                print("Window {} + {} / {}".format(window_start_index, window_size, len(transactions)))
-                window = transactions[window_start_index:window_start_index + window_length];
+            for (
+                    window_start_index,
+                    window_length,
+                    cptree_itemsets) in mine_cp_tree_stream(
+                    transactions,
+                    min_support,
+                    sort_interval,
+                    window_size):
+                print("Window {} + {} / {}".format(window_start_index,
+                                                   window_size, len(transactions)))
+                window = transactions[window_start_index:
+                                      window_start_index + window_length];
                 fptree_itemsets = mine_fp_tree(window, min_support)
-                print("fptree produced {} itemsets, cptree produced {} itemsets".format(len(fptree_itemsets), len(cptree_itemsets)))
+                print(
+                    "fptree produced {} itemsets, cptree produced {} itemsets".format(
+                        len(fptree_itemsets),
+                        len(cptree_itemsets)))
                 assert(set(cptree_itemsets) == set(fptree_itemsets))
 
 
@@ -368,6 +400,7 @@ def test_basic_sanity():
 
     itemsets = mine_fp_tree(transactions, 2 / len(transactions))
     assert(set(itemsets) == expectedItemsets)
+
 
 def test_tree_sorting():
     transactions = [
@@ -421,6 +454,7 @@ def test_tree_sorting():
         print("Sorting took {:.2f} seconds".format(duration))
         assert(tree.is_sorted())
 
+
 def test_stress():
     datasets = [
         ("datasets/UCI-zoo.csv", 0.3),
@@ -433,11 +467,14 @@ def test_stress():
         # Run Apriori and FP-Growth and assert both have the same results.
         print("Running Apriori for {}".format(csvFilePath))
         start = time.time()
-        index = InvertedIndex();
+        index = InvertedIndex()
         index.loadCSV(csvFilePath)
         apriori_itemsets = Apriori(index, min_support)
         apriori_duration = time.time() - start
-        print("Apriori complete. Generated {} itemsets in {:.2f} seconds".format(len(apriori_itemsets), apriori_duration))
+        print(
+            "Apriori complete. Generated {} itemsets in {:.2f} seconds".format(
+                len(apriori_itemsets),
+                apriori_duration))
 
         print("Running FPTree for {}".format(csvFilePath))
         start = time.time()
@@ -446,7 +483,10 @@ def test_stress():
             transactions = list(csv.reader(csvfile))
             fptree_itemsets = mine_fp_tree(transactions, min_support)
         fptree_duration = time.time() - start
-        print("fp_growth complete. Generated {} itemsets in {:.2f} seconds".format(len(fptree_itemsets), fptree_duration))
+        print(
+            "fp_growth complete. Generated {} itemsets in {:.2f} seconds".format(
+                len(fptree_itemsets),
+                fptree_duration))
 
         if set(fptree_itemsets) == set(apriori_itemsets):
             print("SUCCESS({}): Apriori and fptree results match".format(csvFilePath))
@@ -455,14 +495,20 @@ def test_stress():
         assert(set(fptree_itemsets) == set(apriori_itemsets))
 
         if apriori_duration > fptree_duration:
-            print("FPTree was faster by {:.2f} seconds".format(apriori_duration - fptree_duration))
+            print(
+                "FPTree was faster by {:.2f} seconds".format(
+                    apriori_duration -
+                    fptree_duration))
         else:
-            print("Apriori was faster by {:.2f} seconds".format(fptree_duration - apriori_duration))
+            print(
+                "Apriori was faster by {:.2f} seconds".format(
+                    fptree_duration -
+                    apriori_duration))
         print("")
+
 
 if __name__ == "__main__":
     test_basic_sanity()
     test_tree_sorting()
     test_stress()
-    test_cp_tree_stream();
-    
+    test_cp_tree_stream()
