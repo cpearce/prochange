@@ -11,7 +11,6 @@ import sys
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
 
-DEBUG_ASSERTIONS = False
 LOG_TREE_MUTATIONS = False
 
 
@@ -110,10 +109,9 @@ class FPTree:
             new_leaves = self.remove(path, count)
             leaves.extend(new_leaves)
             self.insert(spath, count)
-        if DEBUG_ASSERTIONS:
-            assert(self.is_sorted())
-            assert(self.is_connected())
-            assert(self.header_list_sane())
+        assert(self.is_sorted())
+        assert(self.is_connected())
+        assert(self.header_list_sane())
 
     def remove(self, path, count):
         # Removes a path of items from the tree. Returns list of newly created
@@ -298,10 +296,9 @@ def construct_initial_tree(transactions):
         tree.insert(sort_transaction(map(Item, transaction), frequency))
     return tree
 
-# Yields (window_start_index, window_length, patterns)
-
 
 def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
+    # Yields (window_start_index, window_length, patterns)
     tree = FPTree()
     sliding_window = deque()
     frequency = None
