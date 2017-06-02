@@ -11,7 +11,8 @@ import sys
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
 
-DEBUG_ASSERTIONS = False
+DEBUG_ASSERTIONS = True
+LOG_TREE_MUTATIONS = False
 
 class FPNode:
     def __init__(self, item=None, count=0, parent=None):
@@ -50,6 +51,7 @@ class FPTree:
         if DEBUG_ASSERTIONS:
             transaction = list(transaction)
             assert(count > 0)
+        if LOG_TREE_MUTATIONS:
             print("insert {} count {}".format(transaction, count))
         node = self.root
         self.numTransactions += count
@@ -73,8 +75,12 @@ class FPTree:
             # Ensure leaves are correctly tracked
             assert(all(map(lambda x: x.isLeaf(), self.leaves)))
             assert(all(map(lambda x: x.count > 0, self.leaves)))
+            assert(self.IsConnected())
+            assert(self.header_list_sane())
 
     def sort(self):
+        if LOG_TREE_MUTATIONS:
+            print("Sorting tree")
         # To sort the tree, for each leaf in the tree, find the path to the
         # root, remove each such path, sort the path so that the items are
         # in non-increasing order order of frequency, and re-insert the
@@ -90,6 +96,8 @@ class FPTree:
         # a mutating set, so we copy the list of leaves into a deque, and
         # push new leaves into that.
         leaves = deque(self.leaves)
+        n = self.numTransactions
+        f = self.itemCount.copy()
         while len(leaves) > 0:
             leaf = leaves.pop();
             if not leaf.isLeaf():
@@ -106,16 +114,22 @@ class FPTree:
             new_leaves = self.remove(path, count)
             leaves.extend(new_leaves)
             self.insert(spath, count)
+        assert(n == self.numTransactions)
+        assert(f == self.itemCount)
         if DEBUG_ASSERTIONS:
             assert(self.IsSorted())
+            assert(self.IsConnected())
+            assert(self.header_list_sane())
+
 
     def remove(self, path, count):
         # Removes a path of items from the tree. Returns list of newly created
         # leaves.
         if DEBUG_ASSERTIONS:
-            print("remove {} count {}".format(path, count))
             assert(all(map(lambda x: x.isLeaf(), self.leaves)))
             assert(all(map(lambda x: x.count > 0, self.leaves)))
+        if LOG_TREE_MUTATIONS:
+            print("remove {} count {}".format(path, count))
         if len(path) == 0:
             return
         node = None
@@ -141,15 +155,44 @@ class FPTree:
                     assert(all(map(lambda x: x.isLeaf(), self.leaves)))
                     assert(all(map(lambda x: x.count > 0, self.leaves)))
             parent = node
+        self.numTransactions -= count
+        assert(self.numTransactions >= 0)
+        assert(self.IsConnected())
+        assert(self.header_list_sane())
         return new_leaves         
 
     def IsSorted(self):
+        is_sorted = True
         for leaf in self.leaves:
             node = leaf
             while node.parent is not self.root:
+                if node.item not in node.parent.children:
+                    print("Node {} is not in parent!".format(node))
                 if self.itemCount[node.item] > self.itemCount[node.parent.item]:
-                    return False
+                    print("Not sorted! node={},{} parent={},{}".format(node.item, self.itemCount[node.item], node.parent.item, self.itemCount[node.parent.item]))
+                    # return False
+                    is_sorted = False
                 node = node.parent
+        return is_sorted
+
+    def IsConnected(self):
+        is_connected = True
+        for leaf in self.leaves:
+            node = leaf
+            while node is not self.root:
+                if node.item not in node.parent.children:
+                    print("Node {} is not in parent {} (children={})!".format(node, node.parent, node.parent.children))
+                    is_connected = False
+                node = node.parent
+        return is_connected        
+
+    def header_list_sane(self):
+        for (item, nodes) in self.header.items():
+            for node in nodes:
+                while not node.isRoot():
+                    if node.item not in node.parent.children:
+                        return False
+                    node = node.parent
         return True
 
     def hasSinglePath(self):
@@ -226,6 +269,8 @@ def MineFPTree(transactions, minsup):
     return FPGrowth(tree, mincount)
 
 def SortTransaction(transaction, frequency):
+    if frequency is None:
+        return sorted(transaction)
     if not isinstance(frequency, Counter):
         raise TypeError("frequency must be Counter")
     return sorted(transaction, key=lambda item:frequency[item], reverse=True)    
@@ -245,6 +290,63 @@ def ConstructInitialTree(transactions):
         tree.insert(SortTransaction(map(Item, transaction), frequency))
     return tree
 
+# Returns (window_start_index, window_length, patterns)
+def MineCPTreeStream(transactions, minsup, sort_interval, window_size):
+    tree = FPTree()
+    sliding_window = deque();
+    frequency = None
+    num_transactions = 0
+    for transaction in transactions:
+        num_transactions += 1
+        transaction = SortTransaction(map(Item, transaction), frequency)
+        tree.insert(transaction)
+        sliding_window.append(transaction)
+        did_sort = False
+        if len(sliding_window) > window_size:
+            transaction = sliding_window.popleft()
+            transaction = SortTransaction(transaction, frequency)
+            tree.remove(transaction)
+            assert(len(sliding_window) == window_size)
+            assert(tree.numTransactions == window_size)
+        if (num_transactions % sort_interval) == 0:
+            print("Sorting tree at {}".format(num_transactions))
+            tree.sort()
+            assert(tree.IsSorted())
+            assert(tree.IsConnected())
+            frequency = tree.itemCount.copy()
+            did_sort = True
+        if (num_transactions % window_size) == 0:
+            if not did_sort:
+                tree.sort()
+                frequency = tree.itemCount.copy()
+            mincount = minsup * tree.numTransactions
+            assert(tree.numTransactions == len(sliding_window))
+            assert(len(sliding_window) == window_size)
+            assert(tree.IsSorted())
+            assert(tree.IsConnected())
+            patterns = FPGrowth(tree, mincount)
+            yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
+
+def CPTreeTest():
+    # (csvFilePath, minsup, sort_interval, window_size)
+    datasets = [
+        ("datasets/UCI-zoo.csv", 0.3, 5, 10),
+        ("datasets/mushroom.csv", 0.4, 1000, 1000),
+        ("datasets/BMS-POS.csv", 0.05, 50000, 50000),
+        # ("datasets/kosarak.csv", 0.05),
+    ]
+    for (csvFilePath, minsup, sort_interval, window_size) in datasets:
+        with open(csvFilePath, newline='') as csvfile:
+            print("CPTreeTest {}".format(csvFilePath))
+            transactions = list(csv.reader(csvfile))
+            for (window_start_index, window_length, cptree_itemsets) in MineCPTreeStream(transactions, minsup, sort_interval, window_size):
+                print("Window {} + {} / {}".format(window_start_index, window_size, len(transactions)))
+                window = transactions[window_start_index:window_start_index + window_length];
+                fptree_itemsets = MineFPTree(window, minsup)
+                print("fptree={} cptree={}".format(len(fptree_itemsets), len(cptree_itemsets)))
+                assert(set(cptree_itemsets) == set(fptree_itemsets))
+
+        
 def BasicSanityTest():
     # Basic sanity check of know resuts.
     transactions = [
@@ -377,6 +479,8 @@ def StressTest():
         print("")
 
 if __name__ == "__main__":
-    BasicSanityTest()
-    SortTest()
-    StressTest()
+    # BasicSanityTest()
+    # SortTest()
+    # StressTest()
+    CPTreeTest();
+    
