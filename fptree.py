@@ -11,7 +11,7 @@ import sys
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
 
-DEBUG_ASSERTIONS = True
+DEBUG_ASSERTIONS = False
 LOG_TREE_MUTATIONS = False
 
 class FPNode:
@@ -305,11 +305,10 @@ def MineCPTreeStream(transactions, minsup, sort_interval, window_size):
         if len(sliding_window) > window_size:
             transaction = sliding_window.popleft()
             transaction = SortTransaction(transaction, frequency)
-            tree.remove(transaction)
+            tree.remove(transaction, 1)
             assert(len(sliding_window) == window_size)
             assert(tree.numTransactions == window_size)
         if (num_transactions % sort_interval) == 0:
-            print("Sorting tree at {}".format(num_transactions))
             tree.sort()
             assert(tree.IsSorted())
             assert(tree.IsConnected())
@@ -330,8 +329,8 @@ def MineCPTreeStream(transactions, minsup, sort_interval, window_size):
 def CPTreeTest():
     # (csvFilePath, minsup, sort_interval, window_size)
     datasets = [
-        ("datasets/UCI-zoo.csv", 0.3, 5, 10),
-        ("datasets/mushroom.csv", 0.4, 1000, 1000),
+        ("datasets/UCI-zoo.csv", 0.3, 10, 20),
+        ("datasets/mushroom.csv", 0.4, 500, 500),
         ("datasets/BMS-POS.csv", 0.05, 50000, 50000),
         # ("datasets/kosarak.csv", 0.05),
     ]
@@ -339,11 +338,12 @@ def CPTreeTest():
         with open(csvFilePath, newline='') as csvfile:
             print("CPTreeTest {}".format(csvFilePath))
             transactions = list(csv.reader(csvfile))
+            print("Loaded data file, {} lines".format(len(transactions)))
             for (window_start_index, window_length, cptree_itemsets) in MineCPTreeStream(transactions, minsup, sort_interval, window_size):
                 print("Window {} + {} / {}".format(window_start_index, window_size, len(transactions)))
                 window = transactions[window_start_index:window_start_index + window_length];
                 fptree_itemsets = MineFPTree(window, minsup)
-                print("fptree={} cptree={}".format(len(fptree_itemsets), len(cptree_itemsets)))
+                print("fptree produced {} itemsets, cptree produced {} itemsets".format(len(fptree_itemsets), len(cptree_itemsets)))
                 assert(set(cptree_itemsets) == set(fptree_itemsets))
 
         
