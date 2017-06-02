@@ -48,10 +48,9 @@ class FPTree:
         self.leaves = set()
 
     def insert(self, transaction, count=1):
-        if DEBUG_ASSERTIONS:
-            transaction = list(transaction)
-            assert(count > 0)
+        assert(count > 0)
         if LOG_TREE_MUTATIONS:
+            transaction = list(transaction)
             print("insert {} count {}".format(transaction, count))
         node = self.root
         self.numTransactions += count
@@ -71,12 +70,9 @@ class FPTree:
             else:
                 node = node.children[item]
                 node.count += count
-        if DEBUG_ASSERTIONS:
-            # Ensure leaves are correctly tracked
-            assert(all(map(lambda x: x.isLeaf(), self.leaves)))
-            assert(all(map(lambda x: x.count > 0, self.leaves)))
-            assert(self.IsConnected())
-            assert(self.header_list_sane())
+        assert(self.is_leaves_list_sane())
+        assert(self.IsConnected())
+        assert(self.header_list_sane())
 
     def sort(self):
         if LOG_TREE_MUTATIONS:
@@ -96,8 +92,6 @@ class FPTree:
         # a mutating set, so we copy the list of leaves into a deque, and
         # push new leaves into that.
         leaves = deque(self.leaves)
-        n = self.numTransactions
-        f = self.itemCount.copy()
         while len(leaves) > 0:
             leaf = leaves.pop();
             if not leaf.isLeaf():
@@ -114,20 +108,15 @@ class FPTree:
             new_leaves = self.remove(path, count)
             leaves.extend(new_leaves)
             self.insert(spath, count)
-        assert(n == self.numTransactions)
-        assert(f == self.itemCount)
         if DEBUG_ASSERTIONS:
             assert(self.IsSorted())
             assert(self.IsConnected())
             assert(self.header_list_sane())
 
-
     def remove(self, path, count):
         # Removes a path of items from the tree. Returns list of newly created
         # leaves.
-        if DEBUG_ASSERTIONS:
-            assert(all(map(lambda x: x.isLeaf(), self.leaves)))
-            assert(all(map(lambda x: x.count > 0, self.leaves)))
+        assert(self.header_list_sane())
         if LOG_TREE_MUTATIONS:
             print("remove {} count {}".format(path, count))
         if len(path) == 0:
@@ -150,16 +139,18 @@ class FPTree:
                     self.leaves.add(parent)
                     new_leaves += [parent]
                 self.header[node.item].remove(node)
-                # Ensure leaves are correctly tracked
-                if DEBUG_ASSERTIONS:
-                    assert(all(map(lambda x: x.isLeaf(), self.leaves)))
-                    assert(all(map(lambda x: x.count > 0, self.leaves)))
             parent = node
         self.numTransactions -= count
         assert(self.numTransactions >= 0)
         assert(self.IsConnected())
         assert(self.header_list_sane())
-        return new_leaves         
+        assert(self.is_leaves_list_sane())
+        return new_leaves
+
+    def is_leaves_list_sane(self):
+        # Ensure leaves are correctly tracked
+        return (all(map(lambda x: x.isLeaf(), self.leaves)) and
+                all(map(lambda x: x.count > 0, self.leaves)))
 
     def IsSorted(self):
         for leaf in self.leaves:
@@ -276,7 +267,7 @@ def SortTransaction(transaction, frequency):
         return transaction
     if not isinstance(frequency, Counter):
         raise TypeError("frequency must be Counter")
-    return sorted(transaction, key=lambda item:frequency[item], reverse=True)    
+    return sorted(transaction, key=lambda item:frequency[item], reverse=True)
 
 def CountItemFrequencyIn(transactions):
     frequency = Counter()
@@ -348,7 +339,7 @@ def CPTreeTest():
                 print("fptree produced {} itemsets, cptree produced {} itemsets".format(len(fptree_itemsets), len(cptree_itemsets)))
                 assert(set(cptree_itemsets) == set(fptree_itemsets))
 
-        
+
 def BasicSanityTest():
     # Basic sanity check of know resuts.
     transactions = [
@@ -394,26 +385,16 @@ def SortTest():
         ["b", "c", "e"],
     ]
 
-    print("Loading expected tree");
     expectedTree = ConstructInitialTree(transactions)
     assert(expectedTree.IsSorted())
 
-    print("Loading sort tree");
     tree = FPTree()
     for transaction in transactions:
         # Insert reversed, since lexicographical order is already decreasing
         # frequency order in this example.
         tree.insert(map(Item, reversed(transaction)))
     assert(str(expectedTree) != str(tree))
-
-    print("\nTree before sort {}\n".format(tree))
-
-    print("\nSorting tree");
     tree.sort()
-    print("\nObserved {}\n".format(tree))
-
-    print("\nExpected {}\n".format(expectedTree))
-
     assert(tree.IsSorted())
     assert(str(expectedTree) == str(tree))
 
