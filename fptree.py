@@ -71,9 +71,6 @@ class FPTree:
             else:
                 node = node.children[item]
                 node.count += count
-        assert(self.is_leaves_list_sane())
-        assert(self.is_connected())
-        assert(self.header_list_sane())
 
     def sort(self):
         if LOG_TREE_MUTATIONS:
@@ -109,14 +106,10 @@ class FPTree:
             new_leaves = self.remove(path, count)
             leaves.extend(new_leaves)
             self.insert(spath, count)
-        assert(self.is_sorted())
-        assert(self.is_connected())
-        assert(self.header_list_sane())
 
     def remove(self, path, count):
         # Removes a path of items from the tree. Returns list of newly created
         # leaves.
-        assert(self.header_list_sane())
         if LOG_TREE_MUTATIONS:
             print("remove {} count {}".format(path, count))
         if len(path) == 0:
@@ -141,15 +134,7 @@ class FPTree:
             parent = node
         self.num_transactions -= count
         assert(self.num_transactions >= 0)
-        assert(self.is_connected())
-        assert(self.header_list_sane())
-        assert(self.is_leaves_list_sane())
         return new_leaves
-
-    def is_leaves_list_sane(self):
-        # Ensure leaves are correctly tracked
-        return (all(map(lambda x: x.is_leaf(), self.leaves)) and
-                all(map(lambda x: x.count > 0, self.leaves)))
 
     def is_sorted(self):
         for leaf in self.leaves:
@@ -158,24 +143,6 @@ class FPTree:
                 if self.item_count[node.item] > self.item_count[node.parent.item]:
                     return False
                 node = node.parent
-        return True
-
-    def is_connected(self):
-        for leaf in self.leaves:
-            node = leaf
-            while node is not self.root:
-                if node.item not in node.parent.children:
-                    return False
-                node = node.parent
-        return True
-
-    def header_list_sane(self):
-        for (item, nodes) in self.header.items():
-            for node in nodes:
-                while not node.is_root():
-                    if node.item not in node.parent.children:
-                        return False
-                    node = node.parent
         return True
 
     def has_single_path(self):
@@ -316,8 +283,6 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             assert(tree.num_transactions == window_size)
         if (num_transactions % sort_interval) == 0:
             tree.sort()
-            assert(tree.is_sorted())
-            assert(tree.is_connected())
             frequency = tree.item_count.copy()
         if (num_transactions % window_size) == 0:
             if (num_transactions % sort_interval) != 0:
@@ -327,8 +292,6 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
                 frequency = tree.item_count.copy()
             assert(tree.num_transactions == len(sliding_window))
             assert(len(sliding_window) == window_size)
-            assert(tree.is_sorted())
-            assert(tree.is_connected())
             min_count = min_support * tree.num_transactions
             patterns = fp_growth(tree, min_count, [])
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
