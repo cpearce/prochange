@@ -1,5 +1,5 @@
 from index import InvertedIndex
-from apriori import Apriori
+from apriori import apriori
 from item import ItemSet
 
 
@@ -22,7 +22,7 @@ def test_apriori():
 
     index = InvertedIndex()
     index.load(data)
-    itemsets = Apriori(index, 2 / 6)
+    itemsets = apriori(index, 2 / 6)
     assert(set(expectedItemSets.keys()) == set(itemsets))
     for itemset in itemsets:
         assert(expectedItemSets[itemset] == index.support(itemset))

@@ -2,7 +2,7 @@ from fptree import FPTree
 from fptree import mine_fp_tree
 from fptree import construct_initial_tree
 from fptree import mine_cp_tree_stream
-from apriori import Apriori
+from apriori import apriori
 from index import InvertedIndex
 from item import Item
 from item import ItemSet
@@ -141,8 +141,8 @@ def test_stress():
         print("Running Apriori for {}".format(csvFilePath))
         start = time.time()
         index = InvertedIndex()
-        index.loadCSV(csvFilePath)
-        apriori_itemsets = Apriori(index, min_support)
+        index.load_csv(csvFilePath)
+        apriori_itemsets = apriori(index, min_support)
         apriori_duration = time.time() - start
         print(
             "Apriori complete. Generated {} itemsets in {:.2f} seconds".format(

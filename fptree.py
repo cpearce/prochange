@@ -1,6 +1,6 @@
 from collections import Counter
 from collections import deque
-from apriori import Apriori
+from apriori import apriori
 from index import InvertedIndex
 from item import Item
 from item import ItemSet
