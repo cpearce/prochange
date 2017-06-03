@@ -10,6 +10,7 @@ import time
 import csv
 import sys
 
+
 def test_cp_tree_stream():
     # (csvFilePath, min_support, sort_interval, window_size)
     datasets = [

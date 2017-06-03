@@ -2,6 +2,7 @@ from index import InvertedIndex
 from apriori import Apriori
 from item import ItemSet
 
+
 def test_apriori():
     data = ("a,b,c,d,e,f\n"
             "g,h,i,j,k,l\n"

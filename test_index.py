@@ -1,6 +1,7 @@
 from index import InvertedIndex
 from item import Item
 
+
 def test_InvertedIndex():
     data = ("a,b,c,d,e,f\n"
             "g,h,i,j,k,l\n"

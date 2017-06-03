@@ -36,4 +36,3 @@ def Apriori(index, minsup):
         results.extend(list(generation))
         candidates = generation
     return results
-
