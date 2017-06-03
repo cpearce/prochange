@@ -308,7 +308,6 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
         transaction = sort_transaction(map(Item, transaction), frequency)
         tree.insert(transaction)
         sliding_window.append(transaction)
-        did_sort = False
         if len(sliding_window) > window_size:
             transaction = sliding_window.popleft()
             transaction = sort_transaction(transaction, frequency)
@@ -320,16 +319,27 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             assert(tree.is_sorted())
             assert(tree.is_connected())
             frequency = tree.item_count.copy()
-            did_sort = True
         if (num_transactions % window_size) == 0:
-            if not did_sort:
+            if (num_transactions % sort_interval) != 0:
+                # We won't have sorted due to the previous check, so we
+                # need to sort before mining.
                 tree.sort()
                 frequency = tree.item_count.copy()
-            min_count = min_support * tree.num_transactions
             assert(tree.num_transactions == len(sliding_window))
             assert(len(sliding_window) == window_size)
             assert(tree.is_sorted())
             assert(tree.is_connected())
+            min_count = min_support * tree.num_transactions
+            patterns = fp_growth(tree, min_count, [])
+            yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
+    else:
+        # We didn't just mine on the last transaction, we need to mine now,
+        # else we'll miss data.
+        if (num_transactions % window_size) != 0:
+            if (num_transactions % sort_interval) != 0:
+                tree.sort()
+                frequency = tree.item_count.copy()
+            min_count = min_support * tree.num_transactions
             patterns = fp_growth(tree, min_count, [])
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
 
