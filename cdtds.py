@@ -17,12 +17,15 @@ class Bucket:
         for item in transaction:
             self.item_count[item] += 1
 
-    def size(self):
+    def __len__(self):
         return len(self.transactions)
 
     def append(self, other_bucket):
         for transaction in other_bucket.transactions:
             self.add(transaction)
+
+    def __str__(self):
+        return str(self.transactions)
 
 
 class BucketList:
@@ -40,14 +43,14 @@ class BucketList:
         # with a size which is the same power of 2.
         start = 0
         while start < len(self.buckets):
-            if not float.is_integer(math.log2(self.buckets[start].size())):
+            if not float.is_integer(math.log2(len(self.buckets[start]))):
                 start += 1
                 continue
             # Bucket size is an exact power of 2. Find number of contiguous
             # buckets with same size.
             end = start
             while (end + 1 < len(self.buckets) and
-                   self.buckets[end + 1].size() == self.buckets[start].size()):
+                   len(self.buckets[end + 1]) == len(self.buckets[start])):
                 end += 1
 
             if end - start < self.max_capacity:
@@ -69,8 +72,11 @@ class BucketList:
     def __setitem__(self, index, value):
         self.buckets[index] = value
 
+    def __str__(self):
+        return "BucketList[" + ", ".join(map(str, self.buckets)) + "]"
 
-def find_local_drift(bucket_list, local_cut):
+
+def find_local_drift(bucket_list, local_cut, min_len):
     # Find the index in bucket list where local drift occurs; where
     # item frequencies change significantly.
     cut = 1
@@ -81,17 +87,25 @@ def find_local_drift(bucket_list, local_cut):
             [bucket.item_count for bucket in bucket_list[0:cut]], Counter())
         curr_item_count = sum(
             [bucket.item_count for bucket in bucket_list[cut:]], Counter())
-        # Check if any item's frequency has a significant difference.
-        for item in curr_item_count.keys():
-            if abs(prev_item_count[item] - curr_item_count[item]) > local_cut:
-                return cut
+
+        prev_len = sum([len(bucket) for bucket in bucket_list[0:cut]])
+        curr_len = sum([len(bucket) for bucket in bucket_list[cut:]])
+
+        if prev_len > min_len and curr_len > min_len:
+            # Check if any item's frequency has a significant difference.
+            for item in curr_item_count.keys():
+                prev_support = prev_item_count[item] / prev_len
+                curr_support = curr_item_count[item] / curr_len
+                if abs(prev_support - curr_support) >= local_cut:
+                    return cut
         cut += 1
     return None
 
 
 def change_detection_transaction_data_streams(transactions,
                                               local_cut,
-                                              max_capacity):
+                                              max_capacity,
+                                              min_local_cut_len):
     assert(local_cut > 0 and local_cut <= 1)
     bucket_list = BucketList(max_capacity)
     num_transactions = 0
@@ -103,7 +117,6 @@ def change_detection_transaction_data_streams(transactions,
         bucket_list.add(transaction)
 
         # Check for local drift, as the check is cheap.
-        cut_index = find_local_drift(bucket_list, local_cut)
+        cut_index = find_local_drift(bucket_list, local_cut, min_local_cut_len)
         if cut_index is not None:
-            print("Found a local drift at index {}".format(cut_index))
             bucket_list[0:cut_index] = []
