@@ -60,15 +60,50 @@ class BucketList:
             self.buckets[start].append(self.buckets[start + 1])
             self.buckets.pop(start + 1)
 
+    def __len__(self):
+        return len(self.buckets)
+
+    def __getitem__(self, index):
+        return self.buckets[index]
+
+    def __setitem__(self, index, value):
+        self.buckets[index] = value
+
+
+def find_local_drift(bucket_list, local_cut):
+    # Find the index in bucket list where local drift occurs; where
+    # item frequencies change significantly.
+    cut = 1
+    while cut < len(bucket_list):
+        # Create a Counter() for the item frequencies before and after the
+        # cut point.
+        prev_item_count = sum(
+            [bucket.item_count for bucket in bucket_list[0:cut]], Counter())
+        curr_item_count = sum(
+            [bucket.item_count for bucket in bucket_list[cut:]], Counter())
+        # Check if any item's frequency has a significant difference.
+        for item in curr_item_count.keys():
+            if abs(prev_item_count[item] - curr_item_count[item]) > local_cut:
+                return cut
+        cut += 1
+    return None
+
 
 def change_detection_transaction_data_streams(transactions,
-                                              min_support,
+                                              local_cut,
                                               max_capacity):
+    assert(local_cut > 0 and local_cut <= 1)
     bucket_list = BucketList(max_capacity)
     num_transactions = 0
     for transaction in [list(map(Item, t)) for t in transactions]:
         num_transactions += 1
 
-        # Insert transaction into bucket list.
+        # Insert transaction into bucket list. Bucket list will merge
+        # buckets as necessary to maintain exponential histogram.
         bucket_list.add(transaction)
 
+        # Check for local drift, as the check is cheap.
+        cut_index = find_local_drift(bucket_list, local_cut)
+        if cut_index is not None:
+            print("Found a local drift at index {}".format(cut_index))
+            bucket_list[0:cut_index] = []
