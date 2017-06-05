@@ -17,7 +17,11 @@ LOG_TREE_MUTATIONS = False
 class FPNode:
     def __init__(self, item=None, count=0, parent=None):
         self.item = item
+        # Number of paths which include this node.
         self.count = count
+        # Number of paths which end on this node. There may be other paths
+        # for which the path down to this node is a prefix.
+        self.end_count = 0
         self.children = {}
         self.parent = parent
 
@@ -25,7 +29,7 @@ class FPNode:
         return self.parent is None
 
     def is_leaf(self):
-        return len(self.children) == 0
+        return self.end_count > 0
 
     def __str__(self, level=0):
         ret = ("[root]" if self.is_root()
@@ -58,19 +62,17 @@ class FPTree:
         for item in transaction:
             self.item_count[item] += count
             if item not in node.children:
-                if node.is_leaf() and not node.is_root():
-                    # Node was a leaf, but won't be after acquiring a child.
-                    self.leaves.remove(node)
                 child = FPNode(item, count, node)
                 node.children[item] = child
                 node = child
-                self.leaves.add(node)
                 if item not in self.header:
                     self.header[item] = set()
                 self.header[item].add(node)
             else:
                 node = node.children[item]
                 node.count += count
+        node.end_count += count
+        self.leaves.add(node)
 
     def sort(self):
         if LOG_TREE_MUTATIONS:
@@ -78,63 +80,52 @@ class FPTree:
         # To sort the tree, for each leaf in the tree, find the path to the
         # root, remove each such path, sort the path so that the items are
         # in non-increasing order order of frequency, and re-insert the
-        # sorted path. The list of leaves can change while sorting; removing
-        # a path may result in new leaves being created if the removed path
-        # overlapped another path. We need to include the paths from these
-        # new leaves in the sort too. The other way we create leaves while
-        # sorting the tree is when we insert a sorted path; if not all items
-        # overlap with other paths, we'll create a new leaf. The paths for
-        # these leaves are sorted, so we don't need to include these paths
-        # starting at such new leaves in the sort. So the set of leaves
-        # changes while we're sorting the tree. Python can't iterate over
-        # a mutating set, so we copy the list of leaves into a deque, and
-        # push new leaves into that.
-        leaves = deque(self.leaves)
-        while len(leaves) > 0:
-            leaf = leaves.pop()
-            if not leaf.is_leaf():
-                continue
+        # sorted path.
+        #
+        # The set of leaves changes while sorting; removing a path may
+        # require a leaf node to be removed if there are no paths which
+        # have this path as their prefix still in the tree. When the sorted
+        # path is re-inserted, a new leaf for the end of the path may be
+        # inserted too. Python can't iterate over its built-in set if it
+        # mutates, so we iterate over a copy of the list of leaves.
+        for leaf in self.leaves.copy():
             path = path_to_root(leaf)
+            assert(len(path) > 0)
             path.reverse()
-            if len(path) == 0:
-                continue
             spath = sort_transaction(path, self.item_count)
             if path == spath:
                 # Path is already sorted.
                 continue
-            count = leaf.count
-            new_leaves = self.remove(path, count)
-            leaves.extend(new_leaves)
+            # end_count is the number of patterns that finished on this
+            # node. Note that there may be patterns which have this pattern
+            # as their prefix as a child of this path.
+            count = leaf.end_count
+            self.remove(path, count)
             self.insert(spath, count)
 
     def remove(self, path, count):
-        # Removes a path of items from the tree. Returns list of newly created
-        # leaves.
+        # Removes a path of items from the tree.
         if LOG_TREE_MUTATIONS:
             print("remove {} count {}".format(path, count))
-        if len(path) == 0:
-            return
-        new_leaves = []
-        parent = self.root
+        assert(len(path) > 0)
+        assert(count > 0)
+        node = self.root
         for item in path:
-            assert(item in parent.children)
-            node = parent.children[item]
-            assert(node.count >= count)
-            node.count -= count
-            self.item_count[node.item] -= count
-            assert(node.count >= 0)
-            if node.count == 0:
-                del parent.children[item]
-                if node.is_leaf():
-                    self.leaves.remove(node)
-                if parent.is_leaf() and parent.count > 0:
-                    self.leaves.add(parent)
-                    new_leaves += [parent]
-                self.header[node.item].remove(node)
-            parent = node
+            assert(item in node.children)
+            child = node.children[item]
+            assert(child.count >= count)
+            child.count -= count
+            self.item_count[child.item] -= count
+            assert(child.count >= 0)
+            if child.count == 0:
+                del node.children[item]
+                self.header[child.item].remove(child)
+            node = child
+        assert(node.end_count >= count)
+        node.end_count -= count
+        self.leaves.remove(node)
         self.num_transactions -= count
         assert(self.num_transactions >= 0)
-        return new_leaves
 
     def is_sorted(self):
         for leaf in self.leaves:
@@ -232,7 +223,7 @@ def mine_fp_tree(transactions, min_support):
 
 
 def sort_transaction(transaction, frequency):
-    # For based on non-increasing item frequency. We need the sort to tie
+    # Sorts by non-increasing item frequency. We need the sort to tie
     # break consistently; so that when two items have the same frequency,
     # we always sort them into the same order. This is so that when we're
     # sorting the trees and we re-insert sorted paths, that the path
