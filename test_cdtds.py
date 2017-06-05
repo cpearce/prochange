@@ -3,14 +3,16 @@ from item import Item
 from cdtds import change_detection_transaction_data_streams
 from fptree import count_item_frequency_in
 
+
 def test_BucketList_bucket_sizes():
     test_cases = [(1, [[1], [2], [2, 1], [2, 2]]),
-                 (2, [[1], [1, 1], [2,1], [2, 1, 1], [2, 2, 1]])]
+                  (2, [[1], [1, 1], [2, 1], [2, 1, 1], [2, 2, 1]])]
     for (capacity, expected_lengths) in test_cases:
         bucket_list = BucketList(capacity)
         for lengths in expected_lengths:
             bucket_list.add([Item("a")])
             assert([x.size() for x in bucket_list.buckets] == lengths)
+
 
 def test_BucketList_item_counts():
     transactions = [
@@ -37,21 +39,22 @@ def test_BucketList_item_counts():
         for bucket in bucket_list.buckets:
             count += bucket.item_count[item]
         assert(count == item_count[item])
-        count = sum([bucket.item_count[item] for bucket in bucket_list.buckets])
+        count = sum([bucket.item_count[item]
+                     for bucket in bucket_list.buckets])
         assert(count == item_count[item])
 
-# def test_cdtds():
-#     transactions = [
-#         ["a", "b"],
-#         ["b", "c", "d"],
-#         ["a", "c", "d", "e"],
-#         ["a", "d", "e"],
-#         ["a", "b", "c"],
-#         ["a", "b", "c", "d"],
-#         ["a"],
-#         ["a", "b", "c"],
-#         ["a", "b", "d"],
-#         ["b", "c", "e"],
-#     ]
 
-#     change_detection_transaction_data_streams(transactions, 0.3, 1)
+def test_cdtds():
+    transactions = [
+        ["a", "b"],
+        ["b", "c", "d"],
+        ["a", "c", "d", "e"],
+        ["a", "d", "e"],
+        ["a", "b", "c"],
+        ["a", "b", "c", "d"],
+        ["a"],
+        ["a", "b", "c"],
+        ["a", "b", "d"],
+        ["b", "c", "e"],
+    ]
+    change_detection_transaction_data_streams(transactions, 0.3, 1)
