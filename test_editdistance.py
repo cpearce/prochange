@@ -1,5 +1,6 @@
 from editdistance import levenstein_distance
 
+
 def test_levenstein_distance():
     tests = [
         ("bat", "cat", 1),
