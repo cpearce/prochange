@@ -1,4 +1,5 @@
 from fptree import FPTree
+from fptree import sort_transaction
 from item import Item
 from collections import Counter
 from collections import deque
@@ -7,22 +8,26 @@ import math
 
 class Bucket:
     def __init__(self, transaction=None):
-        self.transactions = []
-        self.item_count = Counter()
+        self.tree = FPTree()
+        self.sorting_counter = None
         if transaction is not None:
             self.add(transaction)
 
     def add(self, transaction):
-        self.transactions += [transaction]
-        for item in transaction:
-            self.item_count[item] += 1
+        self.tree.insert(sort_transaction(transaction, self.sorting_counter))
 
     def __len__(self):
-        return len(self.transactions)
+        return self.tree.num_transactions
 
     def append(self, other_bucket):
-        for transaction in other_bucket.transactions:
-            self.add(transaction)
+        for (transaction, count) in other_bucket.tree:
+            self.tree.insert(
+                sort_transaction(
+                    transaction,
+                    self.sorting_counter),
+                count)
+        self.tree.sort()  # TODO: Is this necessary?
+        self.sorting_counter = self.tree.item_count.copy()
 
     def __str__(self):
         return str(self.transactions)
@@ -84,9 +89,9 @@ def find_local_drift(bucket_list, local_cut, min_len):
         # Create a Counter() for the item frequencies before and after the
         # cut point.
         prev_item_count = sum(
-            [bucket.item_count for bucket in bucket_list[0:cut]], Counter())
+            [bucket.tree.item_count for bucket in bucket_list[0:cut]], Counter())
         curr_item_count = sum(
-            [bucket.item_count for bucket in bucket_list[cut:]], Counter())
+            [bucket.tree.item_count for bucket in bucket_list[cut:]], Counter())
 
         prev_len = sum([len(bucket) for bucket in bucket_list[0:cut]])
         curr_len = sum([len(bucket) for bucket in bucket_list[cut:]])

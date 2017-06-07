@@ -39,9 +39,9 @@ def test_BucketList_item_counts():
     for item in item_count.keys():
         count = 0
         for bucket in bucket_list.buckets:
-            count += bucket.item_count[item]
+            count += bucket.tree.item_count[item]
         assert(count == item_count[item])
-        count = sum([bucket.item_count[item]
+        count = sum([bucket.tree.item_count[item]
                      for bucket in bucket_list.buckets])
         assert(count == item_count[item])
 
