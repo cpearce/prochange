@@ -10,20 +10,22 @@ import csv
 import sys
 
 
+test_transactions = [
+    ["a", "b"],
+    ["b", "c", "d"],
+    ["a", "c", "d", "e"],
+    ["a", "d", "e"],
+    ["a", "b", "c"],
+    ["a", "b", "c", "d"],
+    ["a"],
+    ["a", "b", "c"],
+    ["a", "b", "d"],
+    ["b", "c", "e"],
+]
+
+
 def test_basic_sanity():
     # Basic sanity check of know resuts.
-    transactions = [
-        ["a", "b"],
-        ["b", "c", "d"],
-        ["a", "c", "d", "e"],
-        ["a", "d", "e"],
-        ["a", "b", "c"],
-        ["a", "b", "c", "d"],
-        ["a"],
-        ["a", "b", "c"],
-        ["a", "b", "d"],
-        ["b", "c", "e"],
-    ]
     expected_itemsets = {
         ItemSet("e"), ItemSet("de"), ItemSet("ade"), ItemSet("ce"),
         ItemSet("ae"),
@@ -38,29 +40,17 @@ def test_basic_sanity():
         ItemSet("a"),
     }
 
-    itemsets = mine_fp_tree(transactions, 2 / len(transactions))
+    itemsets = mine_fp_tree(test_transactions, 2 / len(test_transactions))
     assert(set(itemsets) == expected_itemsets)
 
 
 def test_tree_sorting():
-    transactions = [
-        ["a", "b"],
-        ["b", "c", "d"],
-        ["a", "c", "d", "e"],
-        ["a", "d", "e"],
-        ["a", "b", "c"],
-        ["a", "b", "c", "d"],
-        ["a"],
-        ["a", "b", "c"],
-        ["a", "b", "d"],
-        ["b", "c", "e"],
-    ]
 
-    expected_tree = construct_initial_tree(transactions)
+    expected_tree = construct_initial_tree(test_transactions)
     assert(expected_tree.is_sorted())
 
     tree = FPTree()
-    for transaction in transactions:
+    for transaction in test_transactions:
         # Insert reversed, since lexicographical order is already decreasing
         # frequency order in this example.
         tree.insert(map(Item, reversed(transaction)))
@@ -119,8 +109,8 @@ def test_stress():
         print("Running FPTree for {}".format(csvFilePath))
         start = time.time()
         with open(csvFilePath, newline='') as csvfile:
-            transactions = list(csv.reader(csvfile))
-            fptree_itemsets = mine_fp_tree(transactions, min_support)
+            test_transactions = list(csv.reader(csvfile))
+            fptree_itemsets = mine_fp_tree(test_transactions, min_support)
         fptree_duration = time.time() - start
         print(
             "fp_growth complete. Generated {} itemsets in {:.2f} seconds".format(
