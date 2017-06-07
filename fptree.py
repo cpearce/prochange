@@ -148,6 +148,12 @@ class FPTree:
     def __str__(self):
         return "(" + str(self.root) + ")"
 
+    def __iter__(self):
+        # Iterates over (transaction,count), where transaction is
+        # in root-to-leaf order.
+        return [(list(reversed(path_to_root(node))), node.end_count)
+                for node in self.leaves.copy()].__iter__()
+
 
 def path_to_root(node):
     path = []

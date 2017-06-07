@@ -1,6 +1,9 @@
+from collections import Counter
 from fptree import FPTree
 from fptree import mine_fp_tree
 from fptree import construct_initial_tree
+from fptree import count_item_frequency_in
+from fptree import sort_transaction
 from apriori import apriori
 from index import InvertedIndex
 from item import Item
@@ -134,3 +137,18 @@ def test_stress():
                     fptree_duration -
                     apriori_duration))
         print("")
+
+
+def test_tree_iter():
+    tree = FPTree()
+    item_count = count_item_frequency_in(test_transactions)
+    expected = Counter()
+    for transaction in [list(map(Item, t)) for t in test_transactions]:
+        sort_transaction(transaction, item_count)
+        tree.insert(transaction)
+        expected[frozenset(transaction)] += 1
+    stored_transactions = set()
+    observed = Counter()
+    for (transaction, count) in tree:
+        observed[frozenset(transaction)] += count
+    assert(expected == observed)
