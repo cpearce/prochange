@@ -77,9 +77,9 @@ class FPTree:
     def sort(self):
         if LOG_TREE_MUTATIONS:
             print("Sorting tree")
-        # To sort the tree, for each leaf in the tree, find the path to the
-        # root, remove each such path, sort the path so that the items are
-        # in non-increasing order order of frequency, and re-insert the
+        # To sort the tree, for each transaction's 'path' in the tree,
+        # remove each such path, sort the path so that the items are
+        # in non-decreasing order of frequency, and re-insert the
         # sorted path.
         #
         # The set of leaves changes while sorting; removing a path may
@@ -87,21 +87,18 @@ class FPTree:
         # have this path as their prefix still in the tree. When the sorted
         # path is re-inserted, a new leaf for the end of the path may be
         # inserted too. Python can't iterate over its built-in set if it
-        # mutates, so we iterate over a copy of the list of leaves.
-        for leaf in self.leaves.copy():
-            path = path_to_root(leaf)
+        # mutates, so our iterator makes a copy of the set of leaves.
+        for (path, count) in self:
             assert(len(path) > 0)
-            path.reverse()
-            spath = sort_transaction(path, self.item_count)
-            if path == spath:
-                # Path is already sorted.
+            sorted_path = sort_transaction(path, self.item_count)
+            if path == sorted_path:
+                # Path doesn't need to change.
                 continue
-            # end_count is the number of patterns that finished on this
-            # node. Note that there may be patterns which have this pattern
-            # as their prefix as a child of this path.
-            count = leaf.end_count
+            # 'count' is the number of instances of this path in the tree.
+            # Note that there may be paths which have this path as their
+            # prefix, i.e. the last node in the path may have children.
             self.remove(path, count)
-            self.insert(spath, count)
+            self.insert(sorted_path, count)
 
     def remove(self, path, count):
         # Removes a path of items from the tree.
