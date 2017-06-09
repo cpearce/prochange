@@ -1,18 +1,26 @@
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
+
+
 def levenstein_distance(a, b):
     # d[i][j] holds the levenstein distance between the first i elements
     # of a and the first j elements of b.
-    d = [[0] * (len(a) + 1)] * (len(b) + 1)
+    d = [[0 for i in range(len(a) + 1)] for j in range(len(b) + 1)]
 
     # Prefixes can be transformed to empty string by dropping all elements.
     for i in range(1, len(a) + 1):
         d[0][i] = i
     for j in range(1, len(b) + 1):
-        d[j][0] = i
+        d[j][0] = j
 
-    for i in range(1, len(a)):
-        for j in range(1, len(b)):
+    for j in range(1, len(b) + 1):
+        for i in range(1, len(a) + 1):
             cost = 0 if a[i - 1] == b[j - 1] else 1
-            d[i][j] = min(d[i][j - 1],  # deletion
-                          d[i - 1][j],  # insertion
-                          d[i - 1][j - 1] + cost)  # substitution
-    return d[len(a)][len(b)]
+            d[j][i] = min(d[j - 1][i] + 1,  # deletion
+                          d[j][i - 1] + 1,  # insertion
+                          d[j - 1][i - 1] + cost)  # substitution
+
+    return d[len(b)][len(a)]
+
