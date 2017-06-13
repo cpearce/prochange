@@ -32,33 +32,39 @@ class Bucket:
 
 
 class AdaptiveWindow:
-    def __init__(self, max_capacity):
-        assert(max_capacity >= 1)
-        self.max_capacity = max_capacity
+    def __init__(self, bucket_capacity, merge_threshold):
+        assert(bucket_capacity >= 1)
+        assert(merge_threshold >= 1)
+        self.bucket_capacity = bucket_capacity
+        self.merge_threshold = merge_threshold
         self.buckets = []
+        self.pending = Bucket()
 
     def add(self, transaction):
-        # Insert transaction into bucket list.
-        self.buckets += [Bucket(transaction)]
+        self.pending.add(transaction)
 
-        # Merge bucket list to ensure exponential histogram property maintained.
-        # Find each contiguous range of buckets with the same capacity
-        # with a size which is the same power of 2.
+        if len(self.pending) < self.bucket_capacity:
+            return
+
+        # Insert transaction into bucket list.
+        self.buckets.append(self.pending)
+        self.pending = Bucket()
+
+        # Merge bucket list to ensure exponential histogram shape
+        # maintained. Find each contiguous range of buckets with the
+        # same capacity, and if we have at least merge_threshold of
+        # these, merge the oldest two buckets.
         start = 0
         while start < len(self.buckets):
-            if not float.is_integer(math.log2(len(self.buckets[start]))):
-                start += 1
-                continue
-            # Bucket size is an exact power of 2. Find number of contiguous
-            # buckets with same size.
+            # Find number of contiguous buckets with same size.
             end = start
             while (end + 1 < len(self.buckets) and
                    len(self.buckets[end + 1]) == len(self.buckets[start])):
                 end += 1
 
-            if end - start < self.max_capacity:
-                # We don't have (max_capacity + 1) contiguous buckets. Skip
-                # ahead to the end of the range.
+            if end - start < self.merge_threshold:
+                # We don't have (merge_threshold + 1) contiguous buckets of the
+                # same size. Skip ahead to the end of the range.
                 start = end + 1
                 continue
 

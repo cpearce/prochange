@@ -18,7 +18,7 @@ test_transactions = [
 
 
 def test_local_drift():
-    window = AdaptiveWindow(1)
+    window = AdaptiveWindow(1, 1)
     num_transactions = 0
     for transaction in [list(map(Item, t)) for t in test_transactions]:
         num_transactions += 1

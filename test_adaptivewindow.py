@@ -17,10 +17,10 @@ test_transactions = [
 
 
 def test_AdaptiveWindow_bucket_sizes():
-    test_cases = [(1, [[1], [2], [2, 1], [2, 2]]),
-                  (2, [[1], [1, 1], [2, 1], [2, 1, 1], [2, 2, 1]])]
+    test_cases = [  # (1, [[1], [2], [2, 1], [2, 2]]),
+        (2, [[], [2], [2], [2, 2], [2, 2], [4, 2], [4, 2], [4, 2, 2]])]
     for (capacity, expected_lengths) in test_cases:
-        window = AdaptiveWindow(capacity)
+        window = AdaptiveWindow(capacity, capacity)
         for lengths in expected_lengths:
             window.add([Item("a")])
             assert([len(x) for x in window.buckets] == lengths)
@@ -28,7 +28,7 @@ def test_AdaptiveWindow_bucket_sizes():
 
 def test_AdaptiveWindow_item_counts():
     item_count = count_item_frequency_in(test_transactions)
-    window = AdaptiveWindow(1)
+    window = AdaptiveWindow(1, 1)
     # Note: map() produces a generator which can be evaluated only once,
     # so we need to force it to evaluate, otherwise it can't be stored in
     # the bucket list safely.

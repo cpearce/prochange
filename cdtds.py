@@ -34,10 +34,10 @@ def find_local_drift(window, local_cut, min_len):
 def change_detection_transaction_data_streams(transactions,
                                               local_cut,
                                               global_cut,
-                                              max_capacity,
+                                              merge_threshold,
                                               min_cut_len):
     assert(local_cut > 0 and local_cut <= 1)
-    window = AdaptiveWindow(max_capacity)
+    window = AdaptiveWindow(32, merge_threshold)
     num_transactions = 0
     for transaction in [list(map(Item, t)) for t in transactions]:
         num_transactions += 1
