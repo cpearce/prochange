@@ -17,8 +17,16 @@ test_transactions = [
 
 
 def test_AdaptiveWindow_bucket_sizes():
-    test_cases = [  # (1, [[1], [2], [2, 1], [2, 2]]),
-        (2, [[], [2], [2], [2, 2], [2, 2], [4, 2], [4, 2], [4, 2, 2]])]
+    test_cases = [
+        (1, [
+            [1], [2], [
+                2, 1], [
+                2, 2]]), (2, [[], [2], [2], [
+                    2, 2], [
+                        2, 2], [
+                            4, 2], [
+                                4, 2], [
+                                    4, 2, 2]])]
     for (capacity, expected_lengths) in test_cases:
         window = AdaptiveWindow(capacity, capacity)
         for lengths in expected_lengths:
