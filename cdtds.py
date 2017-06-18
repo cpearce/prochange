@@ -102,13 +102,11 @@ def find_concept_drift(
             [bucket.tree.num_transactions for bucket in window[0:cut_index]])
 
         # Calculate "e global cut"
-        global_cut_confidence = (
+        epsilon = (
             ((1 - global_cut_confidence) * (avg_path_len ** 2))
             / 6 * avg_path_len * num_paths_in_prev_tree)
 
-        if tree_global_change(
-                tree,
-                after_item_count) > global_cut_confidence:
+        if tree_global_change(tree, after_item_count) > epsilon:
             # Global change.
             return (cut_index, tree)
 
