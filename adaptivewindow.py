@@ -41,10 +41,11 @@ class AdaptiveWindow:
         self.pending = Bucket()
 
     def add(self, transaction):
+        # Returns True when a bucket boundary is reached, False otherwise.
         self.pending.add(transaction)
 
         if len(self.pending) < self.bucket_capacity:
-            return
+            return False
 
         # Insert transaction into bucket list.
         self.buckets.append(self.pending)
@@ -71,6 +72,7 @@ class AdaptiveWindow:
             # Merge two oldest buckets.
             self.buckets[start].append(self.buckets[start + 1])
             self.buckets.pop(start + 1)
+        return True
 
     def __len__(self):
         return len(self.buckets)

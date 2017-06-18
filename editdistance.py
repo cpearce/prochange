@@ -23,4 +23,3 @@ def levenstein_distance(a, b):
                           d[j - 1][i - 1] + cost)  # substitution
 
     return d[len(b)][len(a)]
-
