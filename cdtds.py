@@ -27,6 +27,21 @@ def variance(count, n):
     return (count * (1 - support)**2 + (n - count) * (0 - support)**2) / n
 
 
+def build_tree(window, item_count):
+    path_len_sum = 0
+    path_count = 0
+    tree = FPTree()
+    for bucket in window:
+        for (transaction, count) in bucket.tree:
+            sorted_transaction = sort_transaction(
+                transaction, item_count)
+            path_len_sum += count * len(sorted_transaction)
+            path_count += count
+            tree.insert(sorted_transaction, count)
+    avg_path_len = path_len_sum / path_count
+    return (tree, avg_path_len)
+
+
 def find_concept_drift(
         window,
         min_cut_len,
@@ -35,7 +50,7 @@ def find_concept_drift(
     # Find the index in bucket list where local or global drift occurs.
     if len(window) < 2:
         # Only one or less buckets, can't have drift.
-        return None
+        return (None, None)
 
     cut_index = len(window) - 2
     while cut_index >= 0:
@@ -71,7 +86,10 @@ def find_concept_drift(
             if abs(before_support -
                    after_support) >= epsilon:
                 # Local drift.
-                return cut_index
+                # Build tree to return to the mining algorithm.
+                (tree, avg_path_len) = build_tree(
+                    window[cut_index:], after_item_count)
+                return (cut_index, tree)
 
         # Check for global drift; new cooccurrences of items, but the
         # item frequencies not necessarily changing.
@@ -79,18 +97,7 @@ def find_concept_drift(
         # Create a new tree for the right hand side, sorted by the item
         # counts of the right hand side. This should have roughly the same
         # time complexity as sorting a tree of the same size.
-        path_len_sum = 0
-        path_count = 0
-        tree = FPTree()
-        for bucket in window[cut_index:]:
-            for (transaction, count) in bucket.tree:
-                sorted_transaction = sort_transaction(
-                    transaction, after_item_count)
-                path_len_sum += count * len(sorted_transaction)
-                path_count += count
-                tree.insert(sorted_transaction, count)
-
-        avg_path_len = path_len_sum / path_count
+        (tree, avg_path_len) = build_tree(window[cut_index:], after_item_count)
         num_paths_in_prev_tree = sum(
             [bucket.tree.num_transactions for bucket in window[0:cut_index]])
 
@@ -103,10 +110,10 @@ def find_concept_drift(
                 tree,
                 after_item_count) > global_cut_confidence:
             # Global change.
-            return cut_index
+            return (cut_index, tree)
 
         cut_index -= 1
-    return None
+    return (None, None)
 
 
 def change_detection_transaction_data_streams(transactions,
@@ -117,20 +124,18 @@ def change_detection_transaction_data_streams(transactions,
     assert(local_cut_confidence > 0 and local_cut_confidence <= 1)
     assert(global_cut_confidence > 0 and global_cut_confidence <= 1)
     window = AdaptiveWindow(32, merge_threshold)
-    num_transactions = 0
+    num_transaction = 0
     for transaction in [list(map(Item, t)) for t in transactions]:
-        num_transactions += 1
+        num_transaction += 1
 
         # Insert transaction into bucket list. Bucket list will merge
         # buckets as necessary to maintain exponential histogram.
         if not window.add(transaction):
-            # Not at a adaptvive window bucket boundary.
+            # Not at a adaptive window bucket boundary.
             continue
 
-        # At a adaptvive window bucket boundary. Check for concept drift.
-
-        # Check for local drift, as the check is cheap.
-        cut_index = find_concept_drift(
+        # At a adaptive window bucket boundary. Check for concept drift.
+        (cut_index, tree) = find_concept_drift(
             window,
             min_cut_len,
             local_cut_confidence,
@@ -140,3 +145,4 @@ def change_detection_transaction_data_streams(transactions,
 
         # Otherwise we have concept drift, need to drop and mine.
         window[0:cut_index] = []
+        yield (tree, num_transaction)
