@@ -74,15 +74,21 @@ def find_concept_drift(
         # Check if any item's frequency has a significant difference.
         for item in after_item_count.keys():
             # Calculate "e local cut".
-            n = before_item_count[item] + after_item_count[item]
-            v = variance(n, before_len + after_len)
-            m = 1 / ((1 / before_len) + 1 / after_len)
-            delta_prime = local_cut_confidence / (before_len + after_len)
-            epsilon = (math.sqrt(2 / n * v * math.log(2 / delta_prime))
-                       + 2 / 3 * m * math.log(2 / delta_prime))
-
             before_support = before_item_count[item] / before_len
             after_support = after_item_count[item] / after_len
+
+            n = before_support + after_support
+            v = variance(n, before_len + after_len)
+            m = 1 / ((1 / before_len) + (1 / after_len))
+            delta_prime = math.log(
+                2 *
+                math.log(
+                    before_len +
+                    after_len) /
+                local_cut_confidence)
+            epsilon = (math.sqrt((2 / m) * v * delta_prime)
+                       + (2 / (3 * m) * delta_prime))
+            assert(epsilon >= 0 and epsilon <= 1)
             if abs(before_support -
                    after_support) >= epsilon:
                 # Local drift.
@@ -115,13 +121,14 @@ def find_concept_drift(
 
 
 def change_detection_transaction_data_streams(transactions,
+                                              window_len,
                                               merge_threshold,
                                               min_cut_len,
                                               local_cut_confidence,
                                               global_cut_confidence):
     assert(local_cut_confidence > 0 and local_cut_confidence <= 1)
     assert(global_cut_confidence > 0 and global_cut_confidence <= 1)
-    window = AdaptiveWindow(1000, merge_threshold)
+    window = AdaptiveWindow(window_len, merge_threshold)
     num_transaction = 0
     for transaction in [list(map(Item, t)) for t in transactions]:
         num_transaction += 1
