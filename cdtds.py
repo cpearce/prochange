@@ -81,11 +81,7 @@ def find_concept_drift(
             v = variance(n, before_len + after_len)
             m = 1 / ((1 / before_len) + (1 / after_len))
             delta_prime = math.log(
-                2 *
-                math.log(
-                    before_len +
-                    after_len) /
-                local_cut_confidence)
+                2 * math.log(before_len + after_len) / local_cut_confidence)
             epsilon = (math.sqrt((2 / m) * v * delta_prime)
                        + (2 / (3 * m) * delta_prime))
             assert(epsilon >= 0 and epsilon <= 1)
