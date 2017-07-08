@@ -47,7 +47,7 @@ def test_apriori():
         (frozenset({Item("x"), Item("y")}), frozenset({Item("z")}), 1, 1.5, 1 / 3),
     }
 
-    rules = set(generate_rules(itemsets, index))
+    rules = set(generate_rules(itemsets, 0, 0, index))
 
     for (antecedent,
          consequent,
