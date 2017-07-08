@@ -3,6 +3,10 @@ from apriori import apriori
 from item import ItemSet
 
 
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
+
+
 def test_apriori():
     data = ("a,b,c,d,e,f\n"
             "g,h,i,j,k,l\n"

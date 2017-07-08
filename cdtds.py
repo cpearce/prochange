@@ -4,6 +4,10 @@ from fptree import sort_transaction
 from item import Item
 from collections import Counter
 import math
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
 
 
 def tree_global_change(tree, other_item_count):

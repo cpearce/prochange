@@ -4,6 +4,10 @@ from item import Item
 from collections import deque
 from fptree import sort_transaction
 from fptree import fp_growth
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
 
 
 def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
