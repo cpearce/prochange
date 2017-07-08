@@ -20,13 +20,13 @@ def powerset(iterable):
 
 # Return a generator of (antecedent, consequent, confidence, lift, support),
 # for all rules that can be generated from set of item sets.
-def generate_rules(set_of_item_sets, min_confidence, min_lift, inverted_index):
-    for item_set in set_of_item_sets:
-        if len(item_set) < 2:
+def generate_rules(set_of_itemsets, min_confidence, min_lift, inverted_index):
+    for itemset in set_of_itemsets:
+        if len(itemset) < 2:
             continue
-        support = inverted_index.support(item_set)
-        for antecedent in (frozenset(x) for x in powerset(item_set)):
-            consequent = item_set - antecedent
+        support = inverted_index.support(itemset)
+        for antecedent in (frozenset(x) for x in powerset(itemset)):
+            consequent = itemset - antecedent
             assert(len(antecedent) > 0)
             assert(len(consequent) > 0)
             confidence = support / inverted_index.support(antecedent)
