@@ -1,5 +1,4 @@
 from adaptivewindow import AdaptiveWindow
-from editdistance import eval as levenstein_distance
 from fptree import FPTree
 from fptree import sort_transaction
 from item import Item
