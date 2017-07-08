@@ -1,7 +1,8 @@
 from index import InvertedIndex
 from apriori import apriori
-from item import ItemSet
-
+from item import Item, ItemSet
+from generaterules import generate_rules
+import sys
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
@@ -30,3 +31,30 @@ def test_apriori():
     assert(set(expectedItemSets.keys()) == set(itemsets))
     for itemset in itemsets:
         assert(expectedItemSets[itemset] == index.support(itemset))
+
+    print("Itemsets={}".format([i for i in itemsets if len(i) > 1]))
+
+    # (antecedent, consequent, confidence, lift, support)
+    expectedRules = {
+        (frozenset({Item("z")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
+        (frozenset({Item("y")}), frozenset({Item("z")}), 1, 1.5, 1 / 3),
+        (frozenset({Item("x")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
+        (frozenset({Item("y")}), frozenset({Item("x")}), 1, 1.5, 1 / 3),
+        (frozenset({Item("z")}), frozenset({Item("x")}), 1, 1.5, 2 / 3),
+        (frozenset({Item("x")}), frozenset({Item("z")}), 1, 1.5, 2 / 3),
+        (frozenset({Item("z"), Item("x")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
+        (frozenset({Item("z"), Item("y")}), frozenset({Item("x")}), 1, 1.5, 1 / 3),
+        (frozenset({Item("x"), Item("y")}), frozenset({Item("z")}), 1, 1.5, 1 / 3),
+    }
+
+    rules = set(generate_rules(itemsets, index))
+
+    for (antecedent,
+         consequent,
+         confidence,
+         lift,
+         support) in rules:
+        print("{}, {} conf={:.4f}, {:.4f}, {:.4f}".
+              format(antecedent, consequent, confidence, lift, support))
+
+    assert(rules == expectedRules)
