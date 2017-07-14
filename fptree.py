@@ -36,7 +36,13 @@ class FPNode:
                else " " * level + str(self.item) + ":" + str(self.count))
         ret += "*" if self.is_leaf() else ""
         ret += "\n"
-        for node in self.children.values():
+        # Print out the child nodes in decreasing order of count, tie break on
+        # lexicographical order. As with sort_transaction() below, we achieve
+        # this by relying on the fact that python's sort is stable, so we
+        # sort first lexicographically, and again by count.
+        children = sorted(self.children.values(), key=lambda node: node.item)
+        children = sorted(children, key=lambda node: node.count, reverse=True)
+        for node in children:
             ret += node.__str__(level + 1)
         return ret
 
