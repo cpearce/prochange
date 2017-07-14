@@ -1,10 +1,13 @@
 from adaptivewindow import AdaptiveWindow
-from editdistance import eval as levenstein_distance
 from fptree import FPTree
 from fptree import sort_transaction
 from item import Item
 from collections import Counter
 import math
+import sys
+
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
 
 
 def tree_global_change(tree, other_item_count):
@@ -45,9 +48,8 @@ def build_tree(window, item_count):
 def find_concept_drift(
         window,
         min_cut_len,
-        local_cut_confidence,
-        global_cut_confidence):
-    # Find the index in bucket list where local or global drift occurs.
+        local_cut_confidence):
+    # Find the index in bucket list where local drift occurs.
     if len(window) < 2:
         # Only one or less buckets, can't have drift.
         return (None, None)
@@ -61,8 +63,6 @@ def find_concept_drift(
         if before_len < min_cut_len or after_len < min_cut_len:
             cut_index -= 1
             continue
-
-        # First, detect local drift; a change in item frequencies.
 
         # Create a Counter() for the item frequencies before and after the
         # cut point.
@@ -93,25 +93,6 @@ def find_concept_drift(
                     window[cut_index:], after_item_count)
                 return (cut_index, tree)
 
-        # Check for global drift; new cooccurrences of items, but the
-        # item frequencies not necessarily changing.
-
-        # Create a new tree for the right hand side, sorted by the item
-        # counts of the right hand side. This should have roughly the same
-        # time complexity as sorting a tree of the same size.
-        (tree, avg_path_len) = build_tree(window[cut_index:], after_item_count)
-        num_paths_in_prev_tree = sum(
-            [bucket.tree.num_transactions for bucket in window[0:cut_index]])
-
-        # Calculate "e global cut"
-        epsilon = (
-            ((1 - global_cut_confidence) * (avg_path_len ** 2))
-            / 6 * avg_path_len * num_paths_in_prev_tree)
-
-        if tree_global_change(tree, after_item_count) > epsilon:
-            # Global change.
-            return (cut_index, tree)
-
         cut_index -= 1
     return (None, None)
 
@@ -120,10 +101,8 @@ def change_detection_transaction_data_streams(transactions,
                                               window_len,
                                               merge_threshold,
                                               min_cut_len,
-                                              local_cut_confidence,
-                                              global_cut_confidence):
+                                              local_cut_confidence):
     assert(local_cut_confidence > 0 and local_cut_confidence <= 1)
-    assert(global_cut_confidence > 0 and global_cut_confidence <= 1)
     window = AdaptiveWindow(window_len, merge_threshold)
     num_transaction = 0
     for transaction in [list(map(Item, t)) for t in transactions]:
@@ -139,8 +118,7 @@ def change_detection_transaction_data_streams(transactions,
         (cut_index, tree) = find_concept_drift(
             window,
             min_cut_len,
-            local_cut_confidence,
-            global_cut_confidence)
+            local_cut_confidence)
         if cut_index is None:
             continue
 

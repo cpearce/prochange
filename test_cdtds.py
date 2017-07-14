@@ -20,8 +20,7 @@ def test_change():
         window_len=5,
         merge_threshold=2,
         min_cut_len=2,
-        local_cut_confidence=0.05,
-        global_cut_confidence=0.05)
+        local_cut_confidence=0.05)
     found_change_at = -1
     for (tree, transaction_num) in gen:
         print("Detected change at tid {}".format(transaction_num))
@@ -38,7 +37,6 @@ def test_cdtds():
             window_len=1000,
             merge_threshold=32,
             min_cut_len=32,
-            local_cut_confidence=0.05,
-            global_cut_confidence=0.05)
+            local_cut_confidence=0.05)
         for (tree, transaction_num) in gen:
             print("Detected change at tid {}".format(transaction_num))
