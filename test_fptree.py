@@ -49,7 +49,7 @@ def test_basic_sanity():
 
 def test_tree_sorting():
 
-    expected_tree = construct_initial_tree(test_transactions)
+    expected_tree = construct_initial_tree(test_transactions, 0)
     assert(expected_tree.is_sorted())
 
     tree = FPTree()

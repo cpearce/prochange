@@ -260,10 +260,12 @@ def count_item_frequency_in(transactions):
     return frequency
 
 
-def construct_initial_tree(transactions):
+def construct_initial_tree(transactions, min_count):
     frequency = count_item_frequency_in(transactions)
     tree = FPTree()
     for transaction in transactions:
-        tree.insert(sort_transaction(map(Item, transaction), frequency))
+        # Remove infrequent items from transaction. They cannot contribute to
+        # producing frequent itemsets, and just slow down the tree algorithms.
+        transaction = filter(lambda item: frequency[item] >= min_count, transaction)
         tree.insert(sort_transaction(transaction, frequency))
     return tree
