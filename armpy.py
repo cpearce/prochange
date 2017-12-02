@@ -42,29 +42,30 @@ def main():
 
     program_start = time.time()
     start = program_start
-    print("Mining association rules using FPGrowth...")
+    print("ARMPY - Association Rule Mining using Python.")
     print("Input file: {}".format(args.input))
     print("Output file: {}".format(args.output))
     print("Minimum support: {}".format(args.min_confidence))
     print("Minimum confidence: {}".format(args.min_support))
     print("Minimum lift: {}".format(args.min_lift))
 
+    print("Generating frequent itemsets using FPGrowth...", flush=True)
     with open(args.input, newline='') as csvfile:
         transactions = list(csv.reader(csvfile))
         itemsets = list(mine_fp_tree(transactions, args.min_support))
     duration = time.time() - start
-    print("fptree mined {} items in {:.2f} seconds".format(len(itemsets), duration))
+    print("FPGrowth mined {} items in {:.2f} seconds".format(len(itemsets), duration), flush=True)
 
     start = time.time()
     index = InvertedIndex()
     index.load_csv(args.input)
     duration = time.time() - start
-    print("Loaded index for rule generation in {:.2f} seconds".format(duration))
+    print("Loaded index for rule generation in {:.2f} seconds".format(duration), flush=True)
 
     start = time.time()
     rules = list(generate_rules(itemsets, args.min_confidence, args.min_lift, index))
     duration = time.time() - start
-    print("Generated {} rules in {:.2f} seconds".format(len(rules), duration))
+    print("Generated {} rules in {:.2f} seconds".format(len(rules), duration), flush=True)
 
     with open(args.output, "w") as f:
         f.write("Antecedent->Consequent,Confidence,Lift,Support")
