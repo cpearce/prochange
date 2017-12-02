@@ -5,7 +5,6 @@ from index import InvertedIndex
 from item import Item
 from item import ItemSet
 import time
-import csv
 import sys
 
 if sys.version_info[0] < 3:
@@ -189,13 +188,10 @@ def fp_growth(tree, min_count, path):
 
 
 def mine_fp_tree(transactions, min_support):
-    # Collect input into list of transactions of Items. This ensures multiple
-    # passes over the data works, and also means we don't need to convert from
-    # string to Item multiple times.
-    transactions = [list(map(Item, t)) for t in transactions]
-    min_count = min_support * len(transactions)
-    tree = construct_initial_tree(transactions, min_count)
-    return fp_growth(tree, min_count, [])
+    (tree, num_transactions) = construct_initial_tree(transactions, min_support)
+    min_count = min_support * num_transactions
+    itemsets = fp_growth(tree, min_count, [])
+    return itemsets
 
 
 def sort_transaction(transaction, frequency):
@@ -217,14 +213,17 @@ def sort_transaction(transaction, frequency):
 
 def count_item_frequency_in(transactions):
     frequency = Counter()
+    num_transactions = 0
     for transaction in transactions:
+        num_transactions += 1
         for item in transaction:
             frequency[item] += 1
-    return frequency
+    return (frequency, num_transactions)
 
 
-def construct_initial_tree(transactions, min_count):
-    frequency = count_item_frequency_in(transactions)
+def construct_initial_tree(transactions, min_support):
+    (frequency, num_transactions) = count_item_frequency_in(transactions)
+    min_count = num_transactions * min_support
     tree = FPTree()
     for transaction in transactions:
         # Remove infrequent items from transaction. They cannot contribute to
@@ -233,4 +232,4 @@ def construct_initial_tree(transactions, min_count):
             lambda item: frequency[item] >= min_count,
             transaction)
         tree.insert(sort_transaction(transaction, frequency))
-    return tree
+    return (tree, num_transactions)

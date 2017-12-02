@@ -105,7 +105,7 @@ def change_detection_transaction_data_streams(transactions,
     assert(local_cut_confidence > 0 and local_cut_confidence <= 1)
     window = AdaptiveWindow(window_len, merge_threshold)
     num_transaction = 0
-    for transaction in [list(map(Item, t)) for t in transactions]:
+    for transaction in transactions:
         num_transaction += 1
 
         # Insert transaction into bucket list. Bucket list will merge

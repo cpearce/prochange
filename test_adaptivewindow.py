@@ -2,7 +2,7 @@ from adaptivewindow import AdaptiveWindow
 from item import Item
 from fptree import count_item_frequency_in
 
-test_transactions = [
+test_transactions = list(map(lambda t: list(map(Item, t)), [
     ["a", "b"],
     ["b", "c", "d"],
     ["a", "c", "d", "e"],
@@ -13,7 +13,7 @@ test_transactions = [
     ["a", "b", "c"],
     ["a", "b", "d"],
     ["b", "c", "e"],
-]
+]))
 
 
 def test_AdaptiveWindow_bucket_sizes():
@@ -35,13 +35,12 @@ def test_AdaptiveWindow_bucket_sizes():
 
 
 def test_AdaptiveWindow_item_counts():
-    transactions = [list(map(Item, t)) for t in test_transactions]
-    item_count = count_item_frequency_in(transactions)
+    (item_count, _) = count_item_frequency_in(test_transactions)
     window = AdaptiveWindow(1, 1)
     # Note: map() produces a generator which can be evaluated only once,
     # so we need to force it to evaluate, otherwise it can't be stored in
     # the bucket list safely.
-    for transaction in transactions:
+    for transaction in test_transactions:
         window.add(transaction)
     for item in item_count.keys():
         count = 0

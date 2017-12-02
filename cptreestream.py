@@ -18,7 +18,7 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
     num_transactions = 0
     for transaction in transactions:
         num_transactions += 1
-        transaction = sort_transaction(map(Item, transaction), frequency)
+        transaction = sort_transaction(transaction, frequency)
         tree.insert(transaction)
         sliding_window.append(transaction)
         if len(sliding_window) > window_size:

@@ -1,4 +1,3 @@
-import csv
 import sys
 import time
 from argparse import ArgumentParser
@@ -6,6 +5,7 @@ from argparse import ArgumentTypeError
 from fptree import mine_fp_tree
 from generaterules import generate_rules
 from index import InvertedIndex
+from datasetreader import DatasetReader
 
 
 def set_to_string(s):
@@ -65,9 +65,8 @@ def main():
     print("Minimum lift: {}".format(args.min_lift))
 
     print("Generating frequent itemsets using FPGrowth...", flush=True)
-    with open(args.input, newline='') as csvfile:
-        transactions = list(csv.reader(csvfile))
-        itemsets = list(mine_fp_tree(transactions, args.min_support))
+    reader = DatasetReader(args.input)
+    itemsets = mine_fp_tree(reader, args.min_support)
     duration = time.time() - start
     print(
         "FPGrowth mined {} items in {:.2f} seconds".format(

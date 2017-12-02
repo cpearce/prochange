@@ -4,7 +4,7 @@ from cdtds import change_detection_transaction_data_streams
 from collections import Counter
 from fptree import FPTree
 import time
-import csv
+from datasetreader import DatasetReader
 import sys
 
 
@@ -29,14 +29,12 @@ def test_change():
 
 
 def test_cdtds():
-    csvFilePath = "datasets/mushroom.csv"
-    with open(csvFilePath, newline='') as csvfile:
-        test_transactions = list(csv.reader(csvfile))
-        gen = change_detection_transaction_data_streams(
-            test_transactions,
-            window_len=1000,
-            merge_threshold=32,
-            min_cut_len=32,
-            local_cut_confidence=0.05)
-        for (tree, transaction_num) in gen:
-            print("Detected change at tid {}".format(transaction_num))
+    reader = DatasetReader("datasets/mushroom.csv")
+    gen = change_detection_transaction_data_streams(
+        reader,
+        window_len=1000,
+        merge_threshold=32,
+        min_cut_len=32,
+        local_cut_confidence=0.05)
+    for (_, transaction_num) in gen:
+        print("Detected change at tid {}".format(transaction_num))

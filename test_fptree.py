@@ -8,12 +8,12 @@ from apriori import apriori
 from index import InvertedIndex
 from item import Item
 from item import ItemSet
+from datasetreader import DatasetReader
 import time
-import csv
 import sys
 
 
-test_transactions = [
+test_transactions = list(map(lambda t: list(map(Item, t)), [
     ["a", "b"],
     ["b", "c", "d"],
     ["a", "c", "d", "e"],
@@ -24,7 +24,7 @@ test_transactions = [
     ["a", "b", "c"],
     ["a", "b", "d"],
     ["b", "c", "e"],
-]
+]))
 
 
 def test_basic_sanity():
@@ -49,14 +49,14 @@ def test_basic_sanity():
 
 def test_tree_sorting():
 
-    expected_tree = construct_initial_tree(test_transactions, 0)
+    (expected_tree, _) = construct_initial_tree(test_transactions, 0)
     assert(expected_tree.is_sorted())
 
     tree = FPTree()
     for transaction in test_transactions:
         # Insert reversed, since lexicographical order is already decreasing
         # frequency order in this example.
-        tree.insert(map(Item, reversed(transaction)))
+        tree.insert(reversed(transaction))
     assert(str(expected_tree) != str(tree))
     tree.sort()
     assert(tree.is_sorted())
@@ -73,11 +73,9 @@ def test_tree_sorting():
         print("Loading FPTree for {}".format(csvFilePath))
         start = time.time()
         tree = FPTree()
-        with open(csvFilePath, newline='') as csvfile:
-            for line in list(csv.reader(csvfile)):
-                # Insert sorted lexicographically
-                transaction = sorted(map(Item, line))
-                tree.insert(transaction)
+        for transaction in DatasetReader(csvFilePath):
+            # Insert sorted lexicographically
+            tree.insert(sorted(transaction))
         duration = time.time() - start
         print("Loaded in {:.2f} seconds".format(duration))
         print("Sorting...")
@@ -111,9 +109,7 @@ def test_stress():
 
         print("Running FPTree for {}".format(csvFilePath))
         start = time.time()
-        with open(csvFilePath, newline='') as csvfile:
-            test_transactions = list(csv.reader(csvfile))
-            fptree_itemsets = mine_fp_tree(test_transactions, min_support)
+        fptree_itemsets = mine_fp_tree(DatasetReader(csvFilePath), min_support)
         fptree_duration = time.time() - start
         print(
             "fp_growth complete. Generated {} itemsets in {:.2f} seconds".format(
@@ -141,13 +137,12 @@ def test_stress():
 
 def test_tree_iter():
     tree = FPTree()
-    item_count = count_item_frequency_in(test_transactions)
+    (item_count, _) = count_item_frequency_in(test_transactions)
     expected = Counter()
-    for transaction in [list(map(Item, t)) for t in test_transactions]:
+    for transaction in test_transactions:
         sort_transaction(transaction, item_count)
         tree.insert(transaction)
         expected[frozenset(transaction)] += 1
-    stored_transactions = set()
     observed = Counter()
     for (transaction, count) in tree:
         observed[frozenset(transaction)] += count
