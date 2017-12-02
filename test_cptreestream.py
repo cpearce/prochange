@@ -21,10 +21,10 @@ def test_cp_tree_stream():
                     window_start_index,
                     window_length,
                     cptree_itemsets) in mine_cp_tree_stream(
-                    transactions,
-                    min_support,
-                    sort_interval,
-                    window_size):
+                        transactions,
+                        min_support,
+                        sort_interval,
+                        window_size):
                 print("Window {} + {} / {}".format(window_start_index,
                                                    window_size, len(transactions)))
                 window = transactions[window_start_index:

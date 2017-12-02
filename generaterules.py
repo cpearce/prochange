@@ -20,6 +20,8 @@ def powerset(iterable):
 
 # Return a generator of (antecedent, consequent, confidence, lift, support),
 # for all rules that can be generated from set of item sets.
+
+
 def generate_rules(set_of_itemsets, min_confidence, min_lift, inverted_index):
     for itemset in set_of_itemsets:
         if len(itemset) < 2:

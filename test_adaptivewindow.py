@@ -35,7 +35,7 @@ def test_AdaptiveWindow_bucket_sizes():
 
 
 def test_AdaptiveWindow_item_counts():
-    transactions = [list(map(Item, t)) for t in test_transactions];
+    transactions = [list(map(Item, t)) for t in test_transactions]
     item_count = count_item_frequency_in(transactions)
     window = AdaptiveWindow(1, 1)
     # Note: map() produces a generator which can be evaluated only once,
