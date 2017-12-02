@@ -139,15 +139,6 @@ class FPTree:
                 node = node.parent
         return True
 
-    def has_single_path(self):
-        node = self.root
-        while node is not None:
-            if len(node.children) > 1:
-                return False
-            elif len(node.children) == 0:
-                return True
-            node = first_child(node)
-
     def __str__(self):
         return "(" + str(self.root) + ")"
 
@@ -178,35 +169,7 @@ def first_child(node):
     return list(node.children.values())[0]
 
 
-def patterns_in_path(tree, node, min_count, path):
-    itemsets = []
-    is_large = tree.item_count[node.item] >= min_count
-    if is_large:
-        itemsets += [frozenset(path + [node.item])]
-    if len(node.children) > 0:
-        child = first_child(node)
-        if is_large:
-            itemsets += patterns_in_path(tree,
-                                         child,
-                                         min_count,
-                                         path + [node.item])
-        itemsets += patterns_in_path(tree, child, min_count, path)
-    return itemsets
-
-
-def patterns_in_tree(tree, min_count, path):
-    assert(tree.has_single_path())
-    if len(tree.root.children) == 0:
-        return []
-    return patterns_in_path(tree, first_child(tree.root), min_count, path)
-
-
 def fp_growth(tree, min_count, path):
-    # If tree has only one branch, we can skip creating a tree and just add
-    # all combinations of items in the branch.
-    if tree.has_single_path():
-        rv = patterns_in_tree(tree, min_count, path)
-        return rv
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
     itemsets = []
