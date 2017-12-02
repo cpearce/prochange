@@ -226,8 +226,12 @@ def fp_growth(tree, min_count, path):
 
 
 def mine_fp_tree(transactions, min_support):
-    tree = construct_initial_tree(transactions)
-    min_count = min_support * tree.num_transactions
+    # Collect input into list of transactions of Items. This ensures multiple
+    # passes over the data works, and also means we don't need to convert from
+    # string to Item multiple times.
+    transactions = [list(map(Item, t)) for t in transactions]
+    min_count = min_support * len(transactions)
+    tree = construct_initial_tree(transactions, min_count)
     return fp_growth(tree, min_count, [])
 
 
@@ -251,7 +255,7 @@ def sort_transaction(transaction, frequency):
 def count_item_frequency_in(transactions):
     frequency = Counter()
     for transaction in transactions:
-        for item in map(Item, transaction):
+        for item in transaction:
             frequency[item] += 1
     return frequency
 
@@ -261,4 +265,5 @@ def construct_initial_tree(transactions):
     tree = FPTree()
     for transaction in transactions:
         tree.insert(sort_transaction(map(Item, transaction), frequency))
+        tree.insert(sort_transaction(transaction, frequency))
     return tree
