@@ -15,22 +15,26 @@ if sys.version_info[0] < 3:
 # below.
 def powerset(iterable):
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(1, len(s)))
+    return chain.from_iterable(combinations(s, r) for r in range(1, len(s)+1))
 
-# Return a generator of (antecedent, consequent, confidence, lift, support),
+# Return the set of (antecedent, consequent, confidence, lift, support),
 # for all rules that can be generated from set of item sets.
 def generate_rules(itemsets_with_support, min_confidence, min_lift):
-    for (itemset, support) in itemsets_with_support.items():
+    result = set()
+    for (itemset, _) in itemsets_with_support.items():
         if len(itemset) < 2:
             continue
-        for antecedent in (frozenset(x) for x in powerset(itemset)):
-            consequent = itemset - antecedent
-            assert(len(antecedent) > 0)
-            assert(len(consequent) > 0)
-            confidence = support / itemsets_with_support[antecedent]
-            if confidence < min_confidence:
-                continue
-            lift = confidence / itemsets_with_support[consequent]
-            if lift < min_lift:
-                continue
-            yield (antecedent, consequent, confidence, lift, support)
+        for item in itemset:
+            consequent = frozenset([item])
+            for antecedent in (frozenset(x) for x in powerset(itemset - consequent)):
+                assert(len(antecedent) > 0)
+                assert(len(consequent) == 1)
+                support = itemsets_with_support[antecedent | consequent]
+                confidence = support / itemsets_with_support[antecedent]
+                if confidence < min_confidence:
+                    continue
+                lift = confidence / itemsets_with_support[consequent]
+                if lift < min_lift:
+                    continue
+                result.add((antecedent, consequent, confidence, lift, support))
+    return result

@@ -38,14 +38,11 @@ def test_apriori():
     expectedRules = {
         (frozenset({Item("x"), Item("y")}), frozenset({Item("z")}), 1, 1.5, 1 / 3),
         (frozenset({Item("x")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
-        (frozenset({Item("x")}), frozenset({Item("z"), Item("y")}), 0.5, 1.5, 1 / 3),
         (frozenset({Item("x")}), frozenset({Item("z")}), 1, 1.5, 2 / 3),
         (frozenset({Item("y")}), frozenset({Item("x")}), 1, 1.5, 1 / 3),
-        (frozenset({Item("y")}), frozenset({Item("z"), Item("x")}), 1, 1.5, 1 / 3),
         (frozenset({Item("y")}), frozenset({Item("z")}), 1, 1.5, 1 / 3),
         (frozenset({Item("z"), Item("x")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
         (frozenset({Item("z"), Item("y")}), frozenset({Item("x")}), 1, 1.5, 1 / 3),
-        (frozenset({Item("z")}), frozenset({Item("x"), Item("y")}), 0.5, 1.5, 1 / 3),
         (frozenset({Item("z")}), frozenset({Item("x")}), 1, 1.5, 2 / 3),
         (frozenset({Item("z")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
     }
