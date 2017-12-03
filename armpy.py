@@ -89,14 +89,14 @@ def main():
 
     start = time.time()
     with open(args.output, "w") as f:
-        f.write("Antecedent->Consequent,Confidence,Lift,Support")
+        f.write("Antecedent->Consequent,Confidence,Lift,Support\n")
         for (antecedent,
              consequent,
              confidence,
              lift,
              support) in rules:
-            f.write("{} -> {},{:.4f},{:.4f},{:.4f}". format(set_to_string(antecedent),
-                                                            set_to_string(consequent), confidence, lift, support))
+            f.write("{} -> {},{:.4f},{:.4f},{:.4f}\n". format(set_to_string(antecedent),
+                                                              set_to_string(consequent), confidence, lift, support))
     print(
         "Wrote rules to disk in {:.2f} seconds".format(
             duration),
