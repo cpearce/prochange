@@ -96,6 +96,7 @@ def main():
             duration),
         flush=True)
 
+    start = time.time()
     with open(args.output, "w") as f:
         f.write("Antecedent->Consequent,Confidence,Lift,Support")
         for (antecedent,
@@ -105,6 +106,10 @@ def main():
              support) in rules:
             f.write("{} -> {},{:.4f},{:.4f},{:.4f}". format(set_to_string(antecedent),
                                                             set_to_string(consequent), confidence, lift, support))
+    print(
+        "Wrote rules to disk in {:.2f} seconds".format(
+            duration),
+        flush=True)
 
     duration = time.time() - program_start
     print("Total runtime {:.2f} seconds".format(duration))
