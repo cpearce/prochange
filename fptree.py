@@ -168,30 +168,29 @@ def first_child(node):
     return list(node.children.values())[0]
 
 
-def fp_growth(tree, min_count, path):
+def fp_growth(tree, min_count, path, num_transactions):
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
-    itemsets = []
+    itemsets = dict()
     for item in sorted(
             tree.item_count.keys(),
             key=lambda i: tree.item_count[i]):
         if tree.item_count[item] < min_count:
             # Item is no longer frequent on this path, skip.
             continue
-        # Record item as part of the path.
-        itemsets += [frozenset(path + [item])]
+        # Record itemset and its support.
+        itemsets[frozenset(path + [item])] = tree.item_count[item] / num_transactions
         # Build conditional tree of all patterns in this tree which start
         # with this item.
         conditional_tree = construct_conditional_tree(tree, item)
-        itemsets += fp_growth(conditional_tree, min_count, path + [item])
+        itemsets.update(fp_growth(conditional_tree, min_count, path + [item], num_transactions))
     return itemsets
 
 
 def mine_fp_tree(transactions, min_support):
     (tree, num_transactions) = construct_initial_tree(transactions, min_support)
     min_count = min_support * num_transactions
-    itemsets = fp_growth(tree, min_count, [])
-    return itemsets
+    return fp_growth(tree, min_count, [], num_transactions)
 
 
 def sort_transaction(transaction, frequency):

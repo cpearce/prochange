@@ -50,7 +50,8 @@ def test_apriori():
         (frozenset({Item("z")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
     }
 
-    rules = set(generate_rules(itemsets, 0, 0, index))
+    itemsets_with_support = dict(map(lambda i: (i, index.support(i)), itemsets))
+    rules = set(generate_rules(itemsets_with_support, 0, 0))
 
     for (antecedent,
          consequent,
@@ -60,4 +61,5 @@ def test_apriori():
         print("{}, {} conf={:.4f}, {:.4f}, {:.4f}".
               format(antecedent, consequent, confidence, lift, support))
 
+    assert(len(rules) == len(expectedRules))
     assert(rules == expectedRules)

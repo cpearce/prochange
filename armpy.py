@@ -75,20 +75,11 @@ def main():
         flush=True)
 
     start = time.time()
-    index = InvertedIndex()
-    index.load_csv(args.input)
-    duration = time.time() - start
-    print(
-        "Loaded index for rule generation in {:.2f} seconds".format(duration),
-        flush=True)
-
-    start = time.time()
     rules = list(
         generate_rules(
             itemsets,
             args.min_confidence,
-            args.min_lift,
-            index))
+            args.min_lift))
     duration = time.time() - start
     print(
         "Generated {} rules in {:.2f} seconds".format(
