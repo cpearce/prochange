@@ -18,7 +18,8 @@ def test_cp_tree_stream():
         for (
                 window_start_index,
                 window_length,
-                cptree_itemsets) in mine_cp_tree_stream(
+                cptree_itemsets,
+                supports) in mine_cp_tree_stream(
                     transactions,
                     min_support,
                     sort_interval,
@@ -28,7 +29,7 @@ def test_cp_tree_stream():
             window = transactions[window_start_index:
                                   window_start_index + window_length]
             print("window={}".format(window))
-            fptree_itemsets = mine_fp_tree(window, min_support)
+            (fptree_itemsets, supports) = mine_fp_tree(window, min_support)
             print(
                 "fptree produced {} itemsets, cptree produced {} itemsets".format(
                     len(fptree_itemsets),

@@ -168,10 +168,16 @@ def first_child(node):
     return list(node.children.values())[0]
 
 
-def fp_growth(tree, min_count, path, num_transactions):
+def fp_growth(
+        tree,
+        min_count,
+        path,
+        num_transactions,
+        itemsets,
+        supports,
+        maximal_only=False):
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
-    itemsets = dict()
     for item in sorted(
             tree.item_count.keys(),
             key=lambda i: tree.item_count[i]):
@@ -179,18 +185,46 @@ def fp_growth(tree, min_count, path, num_transactions):
             # Item is no longer frequent on this path, skip.
             continue
         # Record itemset and its support.
-        itemsets[frozenset(path + [item])] = tree.item_count[item] / num_transactions
         # Build conditional tree of all patterns in this tree which start
         # with this item.
         conditional_tree = construct_conditional_tree(tree, item)
-        itemsets.update(fp_growth(conditional_tree, min_count, path + [item], num_transactions))
-    return itemsets
+        count = len(itemsets)
+        fp_growth(
+            conditional_tree,
+            min_count,
+            path + [item],
+            num_transactions,
+            itemsets,
+            supports,
+            maximal_only)
+
+        # Add the path to here to the output set, if appropriate.
+        # If recursing further didn't yield any more itemsets, then
+        # this is a maximal itemset.
+        itemset = frozenset(path + [item])
+        support = tree.item_count[item] / num_transactions
+        if not maximal_only or len(itemsets) == count:
+            itemsets.add(itemset)
+
+        # Need to store the support of this itemset, so we
+        # can look it up during rule generation later on.
+        supports[itemset] = support
 
 
-def mine_fp_tree(transactions, min_support):
+def mine_fp_tree(transactions, min_support, maximal_itemsets_only=False):
     (tree, num_transactions) = construct_initial_tree(transactions, min_support)
     min_count = min_support * num_transactions
-    return fp_growth(tree, min_count, [], num_transactions)
+    itemsets = set()
+    supports = dict()
+    fp_growth(
+        tree,
+        min_count,
+        [],
+        num_transactions,
+        itemsets,
+        supports,
+        maximal_itemsets_only)
+    return (itemsets, supports)
 
 
 def sort_transaction(transaction, frequency):

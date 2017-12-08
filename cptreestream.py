@@ -39,8 +39,16 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             assert(tree.num_transactions == len(sliding_window))
             assert(len(sliding_window) == window_size)
             min_count = min_support * tree.num_transactions
-            patterns = fp_growth(tree, min_count, [], num_transactions)
-            yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
+            patterns = set()
+            supports = dict()
+            fp_growth(
+                tree,
+                min_count,
+                [],
+                num_transactions,
+                patterns,
+                supports)
+            yield (num_transactions - len(sliding_window), len(sliding_window), patterns, supports)
     else:
         # We didn't just mine on the last transaction, we need to mine now,
         # else we'll miss data.
@@ -49,5 +57,13 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
                 tree.sort()
                 frequency = tree.item_count.copy()
             min_count = min_support * tree.num_transactions
-            patterns = fp_growth(tree, min_count, [], num_transactions)
-            yield (num_transactions - len(sliding_window), len(sliding_window), patterns)
+            patterns = set()
+            supports = dict()
+            fp_growth(
+                tree,
+                min_count,
+                [],
+                num_transactions,
+                patterns,
+                supports)
+            yield (num_transactions - len(sliding_window), len(sliding_window), patterns, supports)
