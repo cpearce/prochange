@@ -22,11 +22,7 @@ def powerset(iterable):
 
 # Return the set of (antecedent, consequent, confidence, lift, support),
 # for all rules that can be generated from set of item sets.
-
-
 def generate_rules(itemsets, supports, min_confidence, min_lift):
-    # if not isinstance(itemsets, set):
-    #     raise TypeError("argument itemsets must be set")
     if not isinstance(supports, dict):
         raise TypeError("argument supports must be dict")
     result = set()
