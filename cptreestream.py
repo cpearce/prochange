@@ -1,5 +1,4 @@
 from fptree import FPTree
-from fptree import mine_fp_tree
 from item import Item
 from collections import deque
 from fptree import sort_transaction
@@ -40,15 +39,14 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
             assert(len(sliding_window) == window_size)
             min_count = min_support * tree.num_transactions
             patterns = set()
-            supports = dict()
+            itemset_counts = dict()
             fp_growth(
                 tree,
                 min_count,
                 [],
-                num_transactions,
                 patterns,
-                supports)
-            yield (num_transactions - len(sliding_window), len(sliding_window), patterns, supports)
+                itemset_counts)
+            yield (num_transactions - len(sliding_window), len(sliding_window), patterns, itemset_counts)
     else:
         # We didn't just mine on the last transaction, we need to mine now,
         # else we'll miss data.
@@ -58,12 +56,11 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
                 frequency = tree.item_count.copy()
             min_count = min_support * tree.num_transactions
             patterns = set()
-            supports = dict()
+            itemset_counts = dict()
             fp_growth(
                 tree,
                 min_count,
                 [],
-                num_transactions,
                 patterns,
-                supports)
-            yield (num_transactions - len(sliding_window), len(sliding_window), patterns, supports)
+                itemset_counts)
+            yield (num_transactions - len(sliding_window), len(sliding_window), patterns, itemset_counts)

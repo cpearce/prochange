@@ -72,7 +72,7 @@ def main():
 
     print("Generating frequent itemsets using FPGrowth...", flush=True)
     reader = DatasetReader(args.input)
-    (itemsets, supports) = mine_fp_tree(
+    (itemsets, itemset_counts, num_transactions) = mine_fp_tree(
         reader, args.min_support, args.maximal_itemsets)
     duration = time.time() - start
     print(
@@ -85,7 +85,8 @@ def main():
     rules = list(
         generate_rules(
             itemsets,
-            supports,
+            itemset_counts,
+            num_transactions,
             args.min_confidence,
             args.min_lift))
     duration = time.time() - start

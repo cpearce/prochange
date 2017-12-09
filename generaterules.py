@@ -22,10 +22,19 @@ def powerset(iterable):
 
 # Return the set of (antecedent, consequent, confidence, lift, support),
 # for all rules that can be generated from set of item sets.
-def generate_rules(itemsets, supports, min_confidence, min_lift):
-    if not isinstance(supports, dict):
-        raise TypeError("argument supports must be dict")
+
+
+def generate_rules(
+        itemsets,
+        itemset_counts,
+        num_transactions,
+        min_confidence,
+        min_lift):
+    if not isinstance(itemset_counts, dict):
+        raise TypeError("argument itemset_counts must be dict")
     result = set()
+
+    def calculate_support(i): return itemset_counts[i] / num_transactions
     for itemset in itemsets:
         if len(itemset) < 2:
             continue
@@ -35,11 +44,11 @@ def generate_rules(itemsets, supports, min_confidence, min_lift):
                                for x in powerset(itemset - consequent)):
                 assert(len(antecedent) > 0)
                 assert(len(consequent) == 1)
-                support = supports[antecedent | consequent]
-                confidence = support / supports[antecedent]
+                support = calculate_support(antecedent | consequent)
+                confidence = support / calculate_support(antecedent)
                 if confidence < min_confidence:
                     continue
-                lift = confidence / supports[consequent]
+                lift = confidence / calculate_support(consequent)
                 if lift < min_lift:
                     continue
                 result.add((antecedent, consequent, confidence, lift, support))

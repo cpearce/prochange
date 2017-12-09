@@ -39,12 +39,14 @@ class InvertedIndex:
     def items(self):
         return self.index.keys()
 
-    def support(self, itemset):
+    def count(self, itemset):
         for item in itemset:
             if not isinstance(item, Item):
                 raise TypeError("Itemset must contain only Items")
-        # print("index.Support({})".format(",".join(map(str, itemset))))
         if not isinstance(itemset, set) and not isinstance(itemset, frozenset):
             raise TypeError("InvertedIndex.support() expects a set of items")
         return len(set.intersection(*[self.index[i]
-                                      for i in itemset])) / self.num_transactions
+                                      for i in itemset]))
+
+    def support(self, itemset):
+        return self.count(itemset) / self.num_transactions

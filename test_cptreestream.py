@@ -29,7 +29,7 @@ def test_cp_tree_stream():
             window = transactions[window_start_index:
                                   window_start_index + window_length]
             print("window={}".format(window))
-            (fptree_itemsets, supports) = mine_fp_tree(window, min_support)
+            (fptree_itemsets, _, _) = mine_fp_tree(window, min_support)
             print(
                 "fptree produced {} itemsets, cptree produced {} itemsets".format(
                     len(fptree_itemsets),

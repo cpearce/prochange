@@ -172,9 +172,8 @@ def fp_growth(
         tree,
         min_count,
         path,
-        num_transactions,
         itemsets,
-        supports,
+        itemset_counts,
         maximal_only=False):
     # For each item in the tree that is frequent, in increasing order
     # of frequency...
@@ -188,43 +187,40 @@ def fp_growth(
         # Build conditional tree of all patterns in this tree which start
         # with this item.
         conditional_tree = construct_conditional_tree(tree, item)
-        count = len(itemsets)
+        num_itemsets = len(itemsets)
         fp_growth(
             conditional_tree,
             min_count,
             path + [item],
-            num_transactions,
             itemsets,
-            supports,
+            itemset_counts,
             maximal_only)
 
         # Add the path to here to the output set, if appropriate.
         # If recursing further didn't yield any more itemsets, then
         # this is a maximal itemset.
         itemset = frozenset(path + [item])
-        support = tree.item_count[item] / num_transactions
-        if not maximal_only or len(itemsets) == count:
+        if not maximal_only or len(itemsets) == num_itemsets:
             itemsets.add(itemset)
 
         # Need to store the support of this itemset, so we
         # can look it up during rule generation later on.
-        supports[itemset] = support
+        itemset_counts[itemset] = tree.item_count[item]
 
 
 def mine_fp_tree(transactions, min_support, maximal_itemsets_only=False):
     (tree, num_transactions) = construct_initial_tree(transactions, min_support)
     min_count = min_support * num_transactions
     itemsets = set()
-    supports = dict()
+    itemset_counts = dict()
     fp_growth(
         tree,
         min_count,
         [],
-        num_transactions,
         itemsets,
-        supports,
+        itemset_counts,
         maximal_itemsets_only)
-    return (itemsets, supports)
+    return (itemsets, itemset_counts, num_transactions)
 
 
 def sort_transaction(transaction, frequency):

@@ -47,8 +47,13 @@ def test_apriori():
         (frozenset({Item("z")}), frozenset({Item("y")}), 0.5, 1.5, 1 / 3),
     }
 
-    supports = dict(map(lambda i: (i, index.support(i)), itemsets))
-    rules = generate_rules(itemsets, supports, 0, 0)
+    itemset_counts = dict(map(lambda i: (i, index.count(i)), itemsets))
+    rules = generate_rules(
+        itemsets,
+        itemset_counts,
+        index.num_transactions,
+        0,
+        0)
 
     for (antecedent,
          consequent,

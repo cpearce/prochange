@@ -43,7 +43,7 @@ def test_basic_sanity():
         ItemSet("a"),
     }
 
-    (itemsets, supports) = mine_fp_tree(
+    (itemsets, _, _) = mine_fp_tree(
         test_transactions, 2 / len(test_transactions))
     assert(set(itemsets) == expected_itemsets)
 
@@ -110,7 +110,7 @@ def test_stress():
 
         print("Running FPTree for {}".format(csvFilePath))
         start = time.time()
-        (fptree_itemsets, supports) = mine_fp_tree(
+        (fptree_itemsets, _, _) = mine_fp_tree(
             DatasetReader(csvFilePath), min_support)
         fptree_duration = time.time() - start
         print(
