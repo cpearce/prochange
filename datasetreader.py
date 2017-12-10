@@ -7,5 +7,5 @@ class DatasetReader:
         self.csv_file_path = csv_file_path
 
     def __iter__(self):
-        return map(lambda txn: list(map(Item, txn)),
+        return map(lambda txn: list(set(map(Item, txn))),
                    csv.reader(open(self.csv_file_path, newline='')))
