@@ -34,7 +34,9 @@ def generate_rules(
         raise TypeError("argument itemset_counts must be dict")
     result = set()
 
-    def calculate_support(i): return itemset_counts[i] / num_transactions
+    def calculate_support(i):
+        return itemset_counts[i] / num_transactions
+
     for itemset in itemsets:
         if len(itemset) < 2:
             continue

@@ -44,6 +44,7 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
                 tree,
                 min_count,
                 [],
+                tree.num_transactions,
                 patterns,
                 itemset_counts)
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns, itemset_counts)
@@ -61,6 +62,7 @@ def mine_cp_tree_stream(transactions, min_support, sort_interval, window_size):
                 tree,
                 min_count,
                 [],
+                tree.num_transactions,
                 patterns,
                 itemset_counts)
             yield (num_transactions - len(sliding_window), len(sliding_window), patterns, itemset_counts)

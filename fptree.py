@@ -172,6 +172,7 @@ def fp_growth(
         tree,
         min_count,
         path,
+        path_count,
         itemsets,
         itemset_counts,
         maximal_only=False):
@@ -183,7 +184,14 @@ def fp_growth(
         if tree.item_count[item] < min_count:
             # Item is no longer frequent on this path, skip.
             continue
-        # Record itemset and its support.
+
+        # Need to store the support of this itemset, so we
+        # can look it up during rule generation later on.
+        itemset = frozenset(path + [item])
+        new_path_count = min(path_count, tree.item_count[item])
+        assert(itemset not in itemset_counts)
+        itemset_counts[itemset] = new_path_count
+
         # Build conditional tree of all patterns in this tree which start
         # with this item.
         conditional_tree = construct_conditional_tree(tree, item)
@@ -192,6 +200,7 @@ def fp_growth(
             conditional_tree,
             min_count,
             path + [item],
+            new_path_count,
             itemsets,
             itemset_counts,
             maximal_only)
@@ -199,13 +208,8 @@ def fp_growth(
         # Add the path to here to the output set, if appropriate.
         # If recursing further didn't yield any more itemsets, then
         # this is a maximal itemset.
-        itemset = frozenset(path + [item])
         if not maximal_only or len(itemsets) == num_itemsets:
             itemsets.add(itemset)
-
-        # Need to store the support of this itemset, so we
-        # can look it up during rule generation later on.
-        itemset_counts[itemset] = tree.item_count[item]
 
 
 def mine_fp_tree(transactions, min_support, maximal_itemsets_only=False):
@@ -217,6 +221,7 @@ def mine_fp_tree(transactions, min_support, maximal_itemsets_only=False):
         tree,
         min_count,
         [],
+        num_transactions,
         itemsets,
         itemset_counts,
         maximal_itemsets_only)
