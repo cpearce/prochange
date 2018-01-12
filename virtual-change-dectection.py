@@ -23,9 +23,6 @@ from rollingmean import RollingMean
 from copy import deepcopy
 
 
-VERIFY_SUPPORT_COUNTS = True
-
-
 def set_to_string(s):
     ss = ""
     for x in sorted(s):
