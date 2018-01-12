@@ -20,6 +20,7 @@ from datasetreader import DatasetReader
 from itertools import islice
 from ruletree import RuleTree
 from rollingmean import RollingMean
+from copy import deepcopy
 
 
 VERIFY_SUPPORT_COUNTS = True
@@ -184,10 +185,8 @@ def main():
             flush=True)
 
         training_rule_tree = RuleTree()
-        test_rule_tree = RuleTree()
         for (antecedent, consequent, _, _, _) in rules:
             training_rule_tree.insert(antecedent, consequent)
-            test_rule_tree.insert(antecedent, consequent)
 
         transaction_num += len(window)
 
@@ -195,7 +194,10 @@ def main():
         # the training window.
         for transaction in window:
             training_rule_tree.record_matches(transaction)
-            test_rule_tree.record_matches(transaction)
+
+        # Populate the test rule tree with a deep copy of the training set.
+        test_rule_tree = deepcopy(training_rule_tree)
+
         training_match_vec = training_rule_tree.match_vector()
 
         # Number of transations which we read before collecting another
