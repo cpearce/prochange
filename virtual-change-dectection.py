@@ -19,6 +19,7 @@ from generaterules import generate_rules
 from datasetreader import DatasetReader
 from itertools import islice
 from ruletree import RuleTree
+from rollingmean import RollingMean
 
 
 VERIFY_SUPPORT_COUNTS = True
@@ -59,26 +60,6 @@ _SQRT2 = numpy.sqrt(2)
 
 def hellinger(p, q):
     return norm(numpy.sqrt(p) - numpy.sqrt(q)) / _SQRT2
-
-
-class Meaner:
-    def __init__(self):
-        self.x_sum = 0
-        self.x_sq_sum = 0
-        self.n = 0
-
-    def add_sample(self, x):
-        self.x_sum += x
-        self.x_sq_sum += x ** 2
-        self.n += 1
-
-    def mean(self):
-        return self.x_sum / self.n
-
-    def std_dev(self):
-        mean = self.mean()
-        n = self.n
-        return numpy.sqrt((self.x_sq_sum / self.n) - (mean * mean))
 
 
 def parse_args():
@@ -227,8 +208,8 @@ def main():
         SAMPLE_THRESHOLD = 30
 
         num_test_transactions = 0
-        rule_vec_mean = Meaner()
-        rag_bag_mean = Meaner()
+        rule_vec_mean = RollingMean()
+        rag_bag_mean = RollingMean()
         for transaction in reader:
             test_rule_tree.record_matches(transaction)
 
