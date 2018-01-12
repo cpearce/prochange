@@ -195,6 +195,8 @@ def main():
         # Populate the test rule tree with a deep copy of the training set.
         test_rule_tree = deepcopy(training_rule_tree)
 
+        # Record the match vector; the vector of rules' supports in the
+        # training window.
         training_match_vec = training_rule_tree.match_vector()
 
         # Number of transations which we read before collecting another
@@ -215,6 +217,8 @@ def main():
             num_test_transactions += 1
             transaction_num += 1
             if num_test_transactions == SAMPLE_INTERVAL:
+                # Detect whether the rules' supports in the test window differ
+                # from the rules' supports in the training window.
                 test_match_vec = test_rule_tree.match_vector()
                 distance = hellinger(training_match_vec, test_match_vec)
                 if rule_vec_mean.n > SAMPLE_THRESHOLD:
@@ -229,6 +233,8 @@ def main():
                         break
                 rule_vec_mean.add_sample(distance)
 
+                # Detect whether the rag bag differs between the training and
+                # test windows.
                 rag_bag = hellinger([training_rule_tree.rag_bag()], [
                                     test_rule_tree.rag_bag()])
                 if rag_bag_mean.n > SAMPLE_THRESHOLD:
