@@ -221,6 +221,7 @@ def main():
                 # from the rules' supports in the training window.
                 test_match_vec = test_rule_tree.match_vector()
                 distance = hellinger(training_match_vec, test_match_vec)
+                rule_vec_mean.add_sample(distance)
                 if rule_vec_mean.n > SAMPLE_THRESHOLD:
                     conf = rule_vec_mean.std_dev() * args.drift_confidence
                     mean = rule_vec_mean.mean()
@@ -231,12 +232,12 @@ def main():
                         print(
                             "Change detected in rule-match-vector at transaction {}".format(transaction_num))
                         break
-                rule_vec_mean.add_sample(distance)
 
                 # Detect whether the rag bag differs between the training and
                 # test windows.
                 rag_bag = hellinger([training_rule_tree.rag_bag()], [
                                     test_rule_tree.rag_bag()])
+                rag_bag_mean.add_sample(rag_bag)
                 if rag_bag_mean.n > SAMPLE_THRESHOLD:
                     conf = rag_bag_mean.std_dev() * args.drift_confidence
                     mean = rag_bag_mean.mean()
@@ -248,7 +249,6 @@ def main():
                             "Change detected in rag bag at transaction {}",
                             transaction_num)
                         break
-                rag_bag_mean.add_sample(rag_bag)
 
                 # Reset counter, so we loop again.
                 num_test_transactions = 0
