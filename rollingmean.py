@@ -1,5 +1,6 @@
 import numpy
 
+
 class RollingMean:
     def __init__(self):
         self.x_sum = 0
