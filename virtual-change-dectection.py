@@ -10,17 +10,13 @@
 
 import sys
 import time
-import numpy
-from scipy.linalg import norm
 from argparse import ArgumentParser
 from argparse import ArgumentTypeError
 from fptree import mine_fp_tree
 from generaterules import generate_rules
 from datasetreader import DatasetReader
 from itertools import islice
-from ruletree import RuleTree
-from rollingmean import RollingMean
-from copy import deepcopy
+from driftdetector import DriftDetector
 
 
 def set_to_string(s):
@@ -51,13 +47,6 @@ def float_gteq_1(string):
 def take(n, iterable):
     "Return first n items of the iterable as a list"
     return list(islice(iterable, n))
-
-
-_SQRT2 = numpy.sqrt(2)
-
-
-def hellinger(p, q):
-    return norm(numpy.sqrt(p) - numpy.sqrt(q)) / _SQRT2
 
 
 def parse_args():
@@ -143,6 +132,7 @@ def main():
                 transaction_num,
                 transaction_num + len(window)))
         end_of_last_window = transaction_num + len(window)
+        transaction_num += len(window)
         print("Running FP-Growth...", flush=True)
         start = time.time()
 
@@ -181,82 +171,18 @@ def main():
                 cohort_num, output_filename, duration),
             flush=True)
 
-        training_rule_tree = RuleTree()
-        for (antecedent, consequent, _, _, _) in rules:
-            training_rule_tree.insert(antecedent, consequent)
+        drift_detector = DriftDetector()
+        drift_detector.train(transaction_num, window, rules)
 
-        transaction_num += len(window)
-
-        # Populate the training rule tree with the rule frequencies from
-        # the training window.
-        for transaction in window:
-            training_rule_tree.record_matches(transaction)
-
-        # Populate the test rule tree with a deep copy of the training set.
-        test_rule_tree = deepcopy(training_rule_tree)
-
-        # Record the match vector; the vector of rules' supports in the
-        # training window.
-        training_match_vec = training_rule_tree.match_vector()
-
-        # Number of transations which we read before collecting another
-        # distance sample.
-        SAMPLE_INTERVAL = 10
-
-        # Number of samples of the Hellinger distance of the
-        # rag-bag/rule-match-vector means we collect before we test against
-        # the training set.
-        SAMPLE_THRESHOLD = 30
-
-        num_test_transactions = 0
-        rule_vec_mean = RollingMean()
-        rag_bag_mean = RollingMean()
         for transaction in reader:
-            test_rule_tree.record_matches(transaction)
-
-            num_test_transactions += 1
-            transaction_num += 1
-            if num_test_transactions == SAMPLE_INTERVAL:
-                # Detect whether the rules' supports in the test window differ
-                # from the rules' supports in the training window.
-                test_match_vec = test_rule_tree.match_vector()
-                distance = hellinger(training_match_vec, test_match_vec)
-                rule_vec_mean.add_sample(distance)
-                if rule_vec_mean.n > SAMPLE_THRESHOLD:
-                    conf = rule_vec_mean.std_dev() * args.drift_confidence
-                    mean = rule_vec_mean.mean()
-                    if distance > mean + conf or distance < mean - conf:
-                        print(
-                            "Distance at transaction {} = {} [lo_bound,avg,up_bound] = [{},{},{}]".format(
-                                transaction_num, distance, mean - conf, mean, mean + conf))
-                        print(
-                            "Change detected in rule-match-vector at transaction {}".format(transaction_num))
-                        break
-
-                # Detect whether the rag bag differs between the training and
-                # test windows.
-                rag_bag = hellinger([training_rule_tree.rag_bag()], [
-                                    test_rule_tree.rag_bag()])
-                rag_bag_mean.add_sample(rag_bag)
-                if rag_bag_mean.n > SAMPLE_THRESHOLD:
-                    conf = rag_bag_mean.std_dev() * args.drift_confidence
-                    mean = rag_bag_mean.mean()
-                    if rag_bag > mean + conf or rag_bag < mean - conf:
-                        print(
-                            "rag bag at transaction {} = {} [lo_bound,avg,up_bound] = [{},{},{}]".format(
-                                transaction_num, rag_bag, mean - conf, mean, mean + conf))
-                        print(
-                            "Change detected in rag bag at transaction {}",
-                            transaction_num)
-                        break
-
-                # Reset counter, so we loop again.
-                num_test_transactions = 0
-
-        print(
-            "Detected change {} transactions after end of training window".format(
-                transaction_num -
-                end_of_last_window))
+            if drift_detector.check_for_drift(
+                    transaction, args.drift_confidence):
+                print(
+                    "Detected change {} transactions after end of training window".format(
+                        transaction_num - end_of_last_window))
+                # Break out of the inner loop, we'll jump back up to the top and mine
+                # a new training window.
+                break
 
         if len(window) < args.training_window_size:
             print("End of stream")
