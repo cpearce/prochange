@@ -21,9 +21,16 @@ def hellinger(p, q):
     return norm(numpy.sqrt(p) - numpy.sqrt(q)) / _SQRT2
 
 
+class Drift:
+    def __init__(self, drift_type, hellinger_value, confidence, mean):
+        self.drift_type = drift_type
+        self.hellinger_value = hellinger_value
+        self.confidence = confidence
+        self.mean = mean
+
+
 class DriftDetector:
-    def train(self, transaction_num, window, rules):
-        self.transaction_num = transaction_num
+    def train(self, window, rules):
         self.training_rule_tree = RuleTree()
         for (antecedent, consequent, _, _, _) in rules:
             self.training_rule_tree.insert(antecedent, consequent)
@@ -47,51 +54,33 @@ class DriftDetector:
     def check_for_drift(self, transaction, drift_confidence):
         self.test_rule_tree.record_matches(transaction)
         self.num_test_transactions += 1
-        self.transaction_num += 1
-        if self.num_test_transactions == SAMPLE_INTERVAL:
-            # Sample and test for drift.
-            self.num_test_transactions = 0
+        if self.num_test_transactions < SAMPLE_INTERVAL:
+            return None
 
-            # Detect whether the rules' supports in the test window differ
-            # from the rules' supports in the training window.
-            distance = hellinger(
-                self.training_match_vec,
-                self.test_rule_tree.match_vector())
-            self.rule_vec_mean.add_sample(distance)
-            if self.rule_vec_mean.n > SAMPLE_THRESHOLD:
-                conf = self.rule_vec_mean.std_dev() * drift_confidence
-                mean = self.rule_vec_mean.mean()
-                if distance > mean + conf or distance < mean - conf:
-                    print(
-                        "Distance at transaction {} = {} [lo_bound,avg,up_bound] = [{},{},{}]".format(
-                            self.transaction_num,
-                            distance,
-                            mean - conf,
-                            mean,
-                            mean + conf))
-                    print(
-                        "Change detected in rule-match-vector at transaction {}".format(self.transaction_num))
-                    return True
+        # Sample and test for drift.
+        self.num_test_transactions = 0
 
-            # Detect whether the rag bag differs between the training and
-            # test windows.
-            rag_bag = hellinger([self.training_rule_tree.rag_bag()], [
-                                self.test_rule_tree.rag_bag()])
-            self.rag_bag_mean.add_sample(rag_bag)
-            if self.rag_bag_mean.n > SAMPLE_THRESHOLD:
-                conf = self.rag_bag_mean.std_dev() * drift_confidence
-                mean = self.rag_bag_mean.mean()
-                if rag_bag > mean + conf or rag_bag < mean - conf:
-                    print(
-                        "rag bag at transaction {} = {} [lo_bound,avg,up_bound] = [{},{},{}]".format(
-                            self.transaction_num,
-                            rag_bag,
-                            mean - conf,
-                            mean,
-                            mean + conf))
-                    print(
-                        "Change detected in rag bag at transaction {}".format(
-                            self.transaction_num))
-                    return True
+        # Detect whether the rules' supports in the test window differ
+        # from the rules' supports in the training window.
+        distance = hellinger(
+            self.training_match_vec,
+            self.test_rule_tree.match_vector())
+        self.rule_vec_mean.add_sample(distance)
+        if self.rule_vec_mean.n > SAMPLE_THRESHOLD:
+            conf = self.rule_vec_mean.std_dev() * drift_confidence
+            mean = self.rule_vec_mean.mean()
+            if distance > mean + conf or distance < mean - conf:
+                return Drift("rule-match-vector", distance, conf, mean)
 
-        return False
+        # Detect whether the rag bag differs between the training and
+        # test windows.
+        rag_bag = hellinger([self.training_rule_tree.rag_bag()], [
+                            self.test_rule_tree.rag_bag()])
+        self.rag_bag_mean.add_sample(rag_bag)
+        if self.rag_bag_mean.n > SAMPLE_THRESHOLD:
+            conf = self.rag_bag_mean.std_dev() * drift_confidence
+            mean = self.rag_bag_mean.mean()
+            if rag_bag > mean + conf or rag_bag < mean - conf:
+                return Drift("rag-bag", rag_bag, conf, mean)
+
+        return None

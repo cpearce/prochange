@@ -172,14 +172,29 @@ def main():
             flush=True)
 
         drift_detector = DriftDetector()
-        drift_detector.train(transaction_num, window, rules)
+        drift_detector.train(window, rules)
 
+        # Read transactions until a drift is detected.
         for transaction in reader:
-            if drift_detector.check_for_drift(
-                    transaction, args.drift_confidence):
+            transaction_num += 1
+            drift = drift_detector.check_for_drift(
+                transaction, args.drift_confidence)
+            if drift is not None:
                 print(
-                    "Detected change {} transactions after end of training window".format(
-                        transaction_num - end_of_last_window))
+                    "Detected drift of type {} at transaction {}, {} after end of training window".format(
+                        drift.drift_type,
+                        transaction_num,
+                        transaction_num -
+                        end_of_last_window))
+                print(
+                    "Hellinger value: {}, confidence interval: {} ± {} ([{},{}])".format(
+                        drift.hellinger_value,
+                        drift.mean,
+                        drift.confidence,
+                        drift.mean -
+                        drift.confidence,
+                        drift.mean +
+                        drift.confidence))
                 # Break out of the inner loop, we'll jump back up to the top and mine
                 # a new training window.
                 break
