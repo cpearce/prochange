@@ -30,6 +30,9 @@ class Drift:
 
 
 class DriftDetector:
+    def __init__(self, volatility_detector):
+        self.volatility_detector = volatility_detector
+
     def train(self, window, rules):
         self.training_rule_tree = RuleTree()
         for (antecedent, consequent, _, _, _) in rules:
@@ -51,7 +54,7 @@ class DriftDetector:
         self.rule_vec_mean = RollingMean()
         self.rag_bag_mean = RollingMean()
 
-    def check_for_drift(self, transaction, drift_confidence):
+    def check_for_drift(self, transaction, transaction_num):
         self.test_rule_tree.record_matches(transaction)
         self.num_test_transactions += 1
         if self.num_test_transactions < SAMPLE_INTERVAL:
@@ -59,6 +62,16 @@ class DriftDetector:
 
         # Sample and test for drift.
         self.num_test_transactions = 0
+
+        if self.rule_vec_mean.n + \
+                1 > SAMPLE_THRESHOLD or self.rag_bag_mean.n + 1 > SAMPLE_THRESHOLD:
+            # We'll need the drift confidence below. Calculate it.
+            gamma = self.volatility_detector.drift_confidence(
+                transaction_num)
+            print(
+                "gamma at transaction {} is {}".format(
+                    transaction_num, gamma))
+            drift_confidence = 2.5 - gamma
 
         # Detect whether the rules' supports in the test window differ
         # from the rules' supports in the training window.

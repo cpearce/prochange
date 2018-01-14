@@ -6,7 +6,6 @@
 #       --min-support 0.05 \
 #       --min-lift 1.0 \
 #       --training-window-size 2500 \
-#       --drift-confidence 1.5
 
 import sys
 import time
@@ -17,6 +16,7 @@ from generaterules import generate_rules
 from datasetreader import DatasetReader
 from itertools import islice
 from driftdetector import DriftDetector
+from volatilitydetector import VolatilityDetector
 
 
 def set_to_string(s):
@@ -80,11 +80,6 @@ def parse_args():
         dest="maximal_itemsets",
         action='store_true'
     )
-    parser.add_argument(
-        "--drift-confidence",
-        dest="drift_confidence",
-        type=float,
-        required=True)
     return parser.parse_args()
 
 
@@ -124,6 +119,7 @@ def main():
     transaction_num = 0
     end_of_last_window = 0
     cohort_num = 1
+    volatility_detector = VolatilityDetector()
     while True:
         window = take(args.training_window_size, reader)
         print("")
@@ -171,14 +167,14 @@ def main():
                 cohort_num, output_filename, duration),
             flush=True)
 
-        drift_detector = DriftDetector()
+        drift_detector = DriftDetector(volatility_detector)
         drift_detector.train(window, rules)
 
         # Read transactions until a drift is detected.
         for transaction in reader:
             transaction_num += 1
             drift = drift_detector.check_for_drift(
-                transaction, args.drift_confidence)
+                transaction, transaction_num)
             if drift is not None:
                 print(
                     "Detected drift of type {} at transaction {}, {} after end of training window".format(
@@ -195,6 +191,10 @@ def main():
                         drift.confidence,
                         drift.mean +
                         drift.confidence))
+                # Record the drift in the volatility detector. This is used inside
+                # the drift detector to help determine how large a confidence interval
+                # is required when detecting drifts.
+                volatility_detector.add(transaction_num)
                 # Break out of the inner loop, we'll jump back up to the top and mine
                 # a new training window.
                 break
