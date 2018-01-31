@@ -109,8 +109,8 @@ def main():
     print("Input file: {}".format(args.input))
     print("Output file prefix: {}".format(args.output))
     print("Training window size: {}".format(args.training_window_size))
-    print("Minimum support: {}".format(args.min_confidence))
-    print("Minimum confidence: {}".format(args.min_support))
+    print("Minimum confidence: {}".format(args.min_confidence))
+    print("Minimum support: {}".format(args.min_support))
     print("Minimum lift: {}".format(args.min_lift))
     print("Generating maximal itemsets: {}".format(args.maximal_itemsets))
 
