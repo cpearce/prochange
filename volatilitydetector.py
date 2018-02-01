@@ -13,7 +13,7 @@ def outliers_iqr(ys):
     iqr = quartile_3 - quartile_1
     lower_bound = quartile_1 - (iqr * 1.5)
     upper_bound = quartile_3 + (iqr * 1.5)
-    return [x for x in ys if x < upper_bound and x > lower_bound]
+    return [x for x in ys if x <= upper_bound and x >= lower_bound]
 
 
 class Pattern:
