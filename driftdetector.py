@@ -7,7 +7,7 @@ from scipy.linalg import norm
 
 # Number of transations which we read before collecting another
 # distance sample.
-SAMPLE_INTERVAL = 10
+SAMPLE_INTERVAL = 32
 
 # Number of samples of the Hellinger distance of the
 # rag-bag/rule-match-vector means we collect before we test against
