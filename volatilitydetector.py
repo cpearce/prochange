@@ -39,6 +39,7 @@ class Pattern:
         # Remove outliers.
         if len(self.samples) > 5:
             self.samples = outliers_iqr(self.samples)
+            assert(len(self.samples) > 0)
         # Ensure patterns don't grow unbounded.
         if len(self.samples) > MAX_NUM_PATTERN_SAMPLES:
             self.samples.pop(0)
