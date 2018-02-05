@@ -1,7 +1,7 @@
 #!/bin/sh
 # https://pypi.python.org/pypi/autopep8
 # Install with:
-#   pip install --upgrade autopep8
-autopep8 --in-place --aggressive --aggressive *.py
+# python3 -m pip install --upgrade autopep8
+python -m autopep8 --in-place --aggressive --aggressive *.py
 
 
