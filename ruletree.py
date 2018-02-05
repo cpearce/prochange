@@ -66,8 +66,31 @@ class RuleTree:
     def rag_bag(self):
         return self.rag_bag_count / self.transaction_count
 
+    # Returns vector of rule supports.
     def match_vector(self):
         return list(map(lambda i: i / self.transaction_count,
                         map(lambda i: i[1],
                             sorted(self.match_counter.items(),
                                    key=lambda i: i[0]))))
+
+    def mean_rule_support(self):
+        v = self.match_vector()
+        assert(len(v) > 0)
+        if len(v) == 0:
+            return (0, 0)
+        return (sum(v) / len(v), len(v))
+
+    def clear_rule_match_counts(self):
+        self.match_counter.clear()
+        self.transaction_count = 0
+        self.rag_bag_count = 0
+
+    def take_and_add_matches(self, other):
+        self.match_counter.update(other.match_counter)
+        self.transaction_count += other.transaction_count
+        self.rag_bag_count += other.rag_bag_count
+        other.clear_rule_match_counts()
+
+    def take_and_overwrite_matches(self, other):
+        self.clear_rule_match_counts()
+        self.take_and_add_matches(other)

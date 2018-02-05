@@ -5,6 +5,10 @@ from ruletree import RuleTree
 from scipy.linalg import norm
 
 
+VirtualDriftAlgorithm = "virtual"
+SeedDriftAlgorithm = "seed"
+ProSeedDriftAlgorithm = "proseed"
+
 # Number of transations which we read before collecting another
 # distance sample.
 SAMPLE_INTERVAL = 32
@@ -22,7 +26,12 @@ def hellinger(p, q):
 
 
 class Drift:
-    def __init__(self, drift_type, hellinger_value, confidence, mean):
+    def __init__(
+            self,
+            drift_type,
+            hellinger_value=None,
+            confidence=None,
+            mean=None):
         self.drift_type = drift_type
         self.hellinger_value = hellinger_value
         self.confidence = confidence

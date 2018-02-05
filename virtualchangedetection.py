@@ -16,6 +16,10 @@ from generaterules import generate_rules
 from datasetreader import DatasetReader
 from itertools import islice
 from driftdetector import DriftDetector
+from driftdetector import SeedDriftAlgorithm
+from driftdetector import ProSeedDriftAlgorithm
+from driftdetector import VirtualDriftAlgorithm
+from seeddriftdetector import SeedDriftDetector
 from volatilitydetector import VolatilityDetector
 from volatilitydetector import FixedConfidenceVolatilityDetector
 
@@ -45,6 +49,17 @@ def float_gteq_1(string):
     return value
 
 
+def valid_drift_algorithm(value):
+    valid_modes = [
+        VirtualDriftAlgorithm,
+        SeedDriftAlgorithm,
+        ProSeedDriftAlgorithm]
+    if value not in valid_modes:
+        msg = "{} is not in valid modes {}".format(value, valid_modes)
+        raise ArgumentTypeError(msg)
+    return value
+
+
 def take(n, iterable):
     "Return first n items of the iterable as a list"
     return list(islice(iterable, n))
@@ -55,6 +70,12 @@ def parse_args():
         description="Association rule data mining in Python - Virtual change detection")
     parser.add_argument("--input", dest="input", required=True)
     parser.add_argument("--output", dest="output", required=True)
+    parser.add_argument(
+        "--drift-algorithm",
+        dest="drift_algorithm",
+        type=valid_drift_algorithm,
+        required=False,
+        default=VirtualDriftAlgorithm)
     parser.add_argument(
         "--training-window-size",
         dest="training_window_size",
@@ -106,12 +127,29 @@ def write_rules_to_file(rules, output_filename):
                     support))
 
 
+def make_volatility_detector(args):
+    if args.fixed_drift_confidence is not None:
+        return FixedConfidenceVolatilityDetector(
+            args.fixed_drift_confidence)
+    else:
+        return VolatilityDetector()
+
+
+def make_drift_detector(args, volatility_detector):
+    if args.drift_algorithm == VirtualDriftAlgorithm:
+        return DriftDetector(volatility_detector)
+    if args.drift_algorithm == SeedDriftAlgorithm:
+        return SeedDriftDetector()
+    return None
+
+
 def main():
     args = parse_args()
     program_start = time.time()
 
     print("ARMPY - Association Rule Mining using Python.")
-    print("Virtual change detection.")
+    print("Change detection.")
+    print("Drift Algorithm: {}".format(args.drift_algorithm))
     print("Input file: {}".format(args.input))
     print("Output file prefix: {}".format(args.output))
     print("Training window size: {}".format(args.training_window_size))
@@ -130,13 +168,12 @@ def main():
     transaction_num = 0
     end_of_last_window = 0
     cohort_num = 1
-    if args.fixed_drift_confidence is not None:
-        volatility_detector = FixedConfidenceVolatilityDetector(
-            args.fixed_drift_confidence)
-    else:
-        volatility_detector = VolatilityDetector()
+    volatility_detector = make_volatility_detector(args)
     while True:
         window = take(args.training_window_size, reader)
+        if len(window) == 0:
+            print("End of stream")
+            break
         print("")
         print(
             "Mining window [{},{}]".format(
@@ -182,7 +219,7 @@ def main():
                 cohort_num, output_filename, duration),
             flush=True)
 
-        drift_detector = DriftDetector(volatility_detector)
+        drift_detector = make_drift_detector(args, volatility_detector)
         drift_detector.train(window, rules)
 
         # Read transactions until a drift is detected.
@@ -197,15 +234,14 @@ def main():
                         transaction_num,
                         transaction_num -
                         end_of_last_window))
-                print(
-                    "Hellinger value: {}, confidence interval: {} ± {} ([{},{}])".format(
-                        drift.hellinger_value,
-                        drift.mean,
-                        drift.confidence,
-                        drift.mean -
-                        drift.confidence,
-                        drift.mean +
-                        drift.confidence))
+                if drift.hellinger_value is not None:
+                    print(
+                        "Hellinger value: {}, confidence interval: {} ± {} ([{},{}])".format(
+                            drift.hellinger_value,
+                            drift.mean,
+                            drift.confidence,
+                            drift.mean - drift.confidence,
+                            drift.mean + drift.confidence))
                 # Record the drift in the volatility detector. This is used inside
                 # the drift detector to help determine how large a confidence interval
                 # is required when detecting drifts.
