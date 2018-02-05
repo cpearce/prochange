@@ -66,6 +66,7 @@ class DriftDetector:
         if (self.rule_vec_mean.n + 1 > SAMPLE_THRESHOLD or
                 self.rag_bag_mean.n + 1 > SAMPLE_THRESHOLD):
             # We'll need the drift confidence below. Calculate it.
+            # Note: the +1 is there because of the add_sample() call below.
             gamma = self.volatility_detector.drift_confidence(
                 transaction_num)
             print(
