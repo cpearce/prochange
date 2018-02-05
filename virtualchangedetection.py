@@ -17,6 +17,7 @@ from datasetreader import DatasetReader
 from itertools import islice
 from driftdetector import DriftDetector
 from volatilitydetector import VolatilityDetector
+from volatilitydetector import FixedConfidenceVolatilityDetector
 
 
 def set_to_string(s):
@@ -78,8 +79,13 @@ def parse_args():
     parser.add_argument(
         "--generate-maximal-itemsets",
         dest="maximal_itemsets",
-        action='store_true'
-    )
+        action='store_true')
+    parser.add_argument(
+        "--fixed-drift-confidence",
+        dest="fixed_drift_confidence",
+        type=float_between_0_and_1,
+        required=False,
+        default=None)
     return parser.parse_args()
 
 
@@ -112,6 +118,11 @@ def main():
     print("Minimum confidence: {}".format(args.min_confidence))
     print("Minimum support: {}".format(args.min_support))
     print("Minimum lift: {}".format(args.min_lift))
+    if args.fixed_drift_confidence is not None:
+        print(
+            "Fixed drift confidence of: {}".format(
+                args.fixed_drift_confidence))
+
     print("Generating maximal itemsets: {}".format(args.maximal_itemsets))
 
     print("Generating frequent itemsets using FPGrowth...", flush=True)
@@ -119,7 +130,11 @@ def main():
     transaction_num = 0
     end_of_last_window = 0
     cohort_num = 1
-    volatility_detector = VolatilityDetector()
+    if args.fixed_drift_confidence is not None:
+        volatility_detector = FixedConfidenceVolatilityDetector(
+            args.fixed_drift_confidence)
+    else:
+        volatility_detector = VolatilityDetector()
     while True:
         window = take(args.training_window_size, reader)
         print("")

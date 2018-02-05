@@ -142,3 +142,16 @@ class VolatilityDetector:
             # Remove connections in the network to the pattern being removed.
             for pattern_id, pattern in self.patterns.items():
                 pattern.connections.pop(lru_pattern_id)
+
+
+# VolatilityDetector that always returns a drift confidence of a fixed value.
+# Useful for testing effectiveness of the adaptive VolatilityDetector above.
+class FixedConfidenceVolatilityDetector:
+    def __init__(self, confidence):
+        self.confidence = confidence
+
+    def add(self, transaction_num):
+        pass
+
+    def drift_confidence(self, transaction_num):
+        return self.confidence
