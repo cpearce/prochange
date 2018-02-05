@@ -1,6 +1,7 @@
 from adaptivewindow import AdaptiveWindow
 from fptree import FPTree
 from fptree import sort_transaction
+from hoeffdingbound import hoeffding_bound
 from item import Item
 from collections import Counter
 import math
@@ -8,26 +9,6 @@ import sys
 
 if sys.version_info[0] < 3:
     raise Exception("Python 3 or a more recent version is required.")
-
-
-def tree_global_change(tree, other_item_count):
-    assert(tree.is_sorted())
-    change = 0.0
-    for (path, count) in tree:
-        sorted_path = sort_transaction(path, other_item_count)
-        distance = levenstein_distance(path, sorted_path)
-        change += (distance ** 2) / (len(path) ** 2)
-    return change / tree.num_transactions
-
-
-def variance(count, n):
-    # Variance is defined as 1/n * E[(x-mu)^2]. We consider our X to be a
-    # stream of n instances of [0,1] values; 1 if item appears in a transaction,
-    # 0 if not. We know that the average is count/n, and that X is 1
-    # count times, and 0 (n-count) times, so the variance then becomes:
-    # 1/n * (count * (1 - support)^2 + (n-count) * (0 - support)^2).
-    support = count / n
-    return (count * (1 - support)**2 + (n - count) * (0 - support)**2) / n
 
 
 def build_tree(window, item_count):
@@ -73,23 +54,17 @@ def find_concept_drift(
 
         # Check if any item's frequency has a significant difference.
         for item in after_item_count.keys():
-            # Calculate "e local cut".
             before_support = before_item_count[item] / before_len
             after_support = after_item_count[item] / after_len
-
-            n = before_support + after_support
-            v = variance(n, before_len + after_len)
-            m = 1 / ((1 / before_len) + (1 / after_len))
-            delta_prime = math.log(
-                2 * math.log(before_len + after_len) / local_cut_confidence)
-            epsilon = (math.sqrt((2 / m) * v * delta_prime)
-                       + (2 / (3 * m) * delta_prime))
-            assert(epsilon >= 0 and epsilon <= 1)
-            if abs(before_support -
-                   after_support) >= epsilon:
-                # Local drift.
+            if not hoeffding_bound(
+                    before_support,
+                    before_len,
+                    after_support,
+                    after_len,
+                    local_cut_confidence):
+                # Supports differ; local drift.
                 # Build tree to return to the mining algorithm.
-                (tree, avg_path_len) = build_tree(
+                (tree, _) = build_tree(
                     window[cut_index:], after_item_count)
                 return (cut_index, tree)
 
