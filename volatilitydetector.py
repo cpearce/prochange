@@ -78,17 +78,19 @@ class VolatilityDetector:
         # drift points' PDF at the current transaction number.
         max_pdf = 0
         loc_max_pdf = 0
-        previous_interval = 0
         assert(len(closest_ids) <= 2)
         assert(len(closest_ids) > 0)
+        next_drift = None
         for _, distance, interval in closest_ids:
             x = transaction_num - self.last_drift_transaction_num
             loc = interval
-            assert(previous_interval < interval)
-            scale = (interval - previous_interval) / 2
-            previous_interval = interval
+            scale = x + interval / 2
             max_pdf = max(max_pdf, stats.norm.pdf(loc, loc, scale))
-            loc_max_pdf = max(loc_max_pdf, stats.norm.pdf(x, loc, scale))
+            pdf = stats.norm.pdf(x, loc, scale)
+            if pdf > loc_max_pdf:
+                next_drift = loc
+            loc_max_pdf = max(loc_max_pdf, pdf)
+
 
         loc_max_pdf /= max_pdf
         assert(loc_max_pdf >= 0 and loc_max_pdf <= 1)
