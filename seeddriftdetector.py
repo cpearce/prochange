@@ -36,7 +36,7 @@ class SeedDriftDetector:
 
         # Record the match vector; the vector of rules' supports in the
         # training window.
-        self.training_mean, self.training_len = self.training_rule_tree.mean_rule_support()
+        self.training_mean, self.training_len = self.training_rule_tree.rule_miss_rate()
 
         self.num_test_transactions = 0
 
@@ -58,8 +58,8 @@ class SeedDriftDetector:
         else:
             # Can the current block be merged with the previous block,
             # or should the previous be dropped?
-            prev_mean, prev_len = self.previous_rule_tree.mean_rule_support()
-            curr_mean, curr_len = self.current_rule_tree.mean_rule_support()
+            prev_mean, prev_len = self.previous_rule_tree.rule_miss_rate()
+            curr_mean, curr_len = self.current_rule_tree.rule_miss_rate()
             if hoeffding_bound(
                     prev_mean,
                     prev_len,
@@ -76,7 +76,7 @@ class SeedDriftDetector:
                     self.current_rule_tree)
 
         # Test to see whether training block is similar to test block.
-        prev_mean, prev_len = self.previous_rule_tree.mean_rule_support()
+        prev_mean, prev_len = self.previous_rule_tree.rule_miss_rate()
         if not hoeffding_bound(
                 self.training_mean,
                 self.training_len,

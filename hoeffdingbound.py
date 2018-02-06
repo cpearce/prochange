@@ -14,12 +14,12 @@ def variance(count, n):
 def hoeffding_bound(a_mean, a_len, b_mean, b_len, confidence):
     # Returns true if we can't reject null hypothesis that the populations are
     # the same given confidence value.
-    n = a_mean + b_mean
+    n = (a_mean * a_len + b_mean * b_len) / (a_len + b_len)
     v = variance(n, a_len + b_len)
     m = 1 / ((1 / a_len) + (1 / b_len))
     delta_prime = math.log(
         2 * math.log(a_len + b_len) / confidence)
     epsilon = (math.sqrt((2 / m) * v * delta_prime)
                + (2 / (3 * m) * delta_prime))
-    assert(epsilon >= 0 and epsilon <= 1)
+    assert(epsilon >= 0)
     return abs(a_mean - b_mean) < epsilon

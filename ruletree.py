@@ -73,12 +73,9 @@ class RuleTree:
                             sorted(self.match_counter.items(),
                                    key=lambda i: i[0]))))
 
-    def mean_rule_support(self):
-        v = self.match_vector()
-        assert(len(v) > 0)
-        if len(v) == 0:
-            return (0, 0)
-        return (sum(v) / len(v), len(v))
+    def rule_miss_rate(self):
+        return ((self.transaction_count - self.rag_bag_count) /
+                self.transaction_count, self.transaction_count)
 
     def clear_rule_match_counts(self):
         self.match_counter.clear()
