@@ -82,11 +82,10 @@ class VolatilityDetector:
         assert(len(closest_ids) > 0)
         next_drift = None
         for _, distance, interval in closest_ids:
-            x = transaction_num - self.last_drift_transaction_num
-            loc = interval
-            scale = x + interval / 2
+            loc = self.last_drift_transaction_num + interval
+            scale = interval / 2
             max_pdf = max(max_pdf, stats.norm.pdf(loc, loc, scale))
-            pdf = stats.norm.pdf(x, loc, scale)
+            pdf = stats.norm.pdf(transaction_num, loc, scale)
             if pdf > loc_max_pdf:
                 next_drift = loc
             loc_max_pdf = max(loc_max_pdf, pdf)
