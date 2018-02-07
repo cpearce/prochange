@@ -9,7 +9,7 @@ MAX_NUM_PATTERN_SAMPLES = 100
 
 # Set to false to use ks-test instead for finding which pattern
 # to add a drift interval to.
-USE_CHI_SQUARED_SIMILARITY = True
+USE_CHI_SQUARED_SIMILARITY = False
 
 
 def outliers_iqr(ys):
