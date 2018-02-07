@@ -3,9 +3,13 @@ from collections import Counter
 from rollingmean import RollingMean
 from scipy import stats
 
-KS_TEST_CONFIDENCE = 0.05
+SIMILARITY_TEST_CONFIDENCE = 0.95
 MAX_PATTERN_SET_SIZE = 100
 MAX_NUM_PATTERN_SAMPLES = 100
+
+# Set to false to use ks-test instead for finding which pattern
+# to add a drift interval to.
+USE_CHI_SQUARED_SIMILARITY = True
 
 
 def outliers_iqr(ys):
@@ -44,6 +48,18 @@ class Pattern:
         if len(self.samples) > MAX_NUM_PATTERN_SAMPLES:
             self.samples.pop(0)
 
+    def chisquare(self, drift_interval):
+        samples = self.samples
+        if len(samples) == 1:
+            samples += [samples[0]]
+        (_, p_val) = stats.chisquare([drift_interval], samples)
+        return p_val
+
+    def similarity(self, drift_interval):
+        if USE_CHI_SQUARED_SIMILARITY:
+            return self.chisquare(drift_interval)
+        else:
+            return self.ks_test(drift_interval)
 
 class VolatilityDetector:
     def __init__(self):
@@ -105,12 +121,12 @@ class VolatilityDetector:
         max_p_val = 0
         max_p_val_id = 0
         for id, pattern in self.patterns.items():
-            p_val = pattern.ks_test(drift_interval)
+            p_val = pattern.similarity(drift_interval)
             if p_val > max_p_val:
                 max_p_val = p_val
                 max_p_val_id = id
 
-        if max_p_val > KS_TEST_CONFIDENCE:
+        if max_p_val > SIMILARITY_TEST_CONFIDENCE:
             # Found at least one pattern.
             id = max_p_val_id
         else:
