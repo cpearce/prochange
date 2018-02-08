@@ -61,51 +61,13 @@ class Pattern:
         else:
             return self.ks_test(drift_interval)
 
-class VolatilityDetector:
+
+class PatternNetwork:
     def __init__(self):
         self.last_drift_transaction_num = 0
         self.patterns = dict()
         self.next_pattern_id = 1
         self.last_drift_pattern_id = None
-        self.last_drift_confidence = None
-
-    def drift_confidence(self, transaction_num):
-        if self.last_drift_pattern_id is None or len(
-                self.patterns[self.last_drift_pattern_id].connections) == 0:
-            return 1.0
-
-        # From the top ten most probable transitions from previous drift,
-        # find the two closest to the current transaction num. Note: the
-        # closest may be behind us.
-        assert(len(self.patterns[self.last_drift_pattern_id].connections) > 0)
-        closest_ids = []
-        top10 = list(
-            self.patterns[self.last_drift_pattern_id].connections.most_common(10))
-        assert(len(top10) > 0)
-        for id, _ in top10:
-            expected_drift_interval = self.patterns[id].mean()
-            expected_drift_position = self.last_drift_transaction_num + expected_drift_interval
-            distance = abs(transaction_num - expected_drift_position)
-            closest_ids = sorted(
-                closest_ids + [(id, distance, expected_drift_interval)], key=lambda x: x[1])[:2]
-
-        # Find the maximum of the two closest expected drift points' probability
-        # distribution function, and the maximum value of the two closest expected
-        # drift points' PDF at the current transaction number.
-        max_pdf = 0
-        loc_max_pdf = 0
-        assert(len(closest_ids) <= 2)
-        assert(len(closest_ids) > 0)
-        for _, distance, interval in closest_ids:
-            loc = self.last_drift_transaction_num + interval
-            scale = interval / 2
-            max_pdf = max(max_pdf, stats.norm.pdf(loc, loc, scale))
-            pdf = stats.norm.pdf(transaction_num, loc, scale)
-            loc_max_pdf = max(loc_max_pdf, pdf)
-
-        loc_max_pdf /= max_pdf
-        assert(loc_max_pdf >= 0 and loc_max_pdf <= 1)
-        return loc_max_pdf
 
     def add(self, transaction_num):
         drift_interval = transaction_num - self.last_drift_transaction_num
@@ -156,10 +118,63 @@ class VolatilityDetector:
             for pattern_id, pattern in self.patterns.items():
                 pattern.connections.pop(lru_pattern_id)
 
+    def likely_connections_at(
+            self,
+            sample_size,
+            num_connections,
+            transaction_num):
+        if self.last_drift_pattern_id is None or len(
+                self.patterns[self.last_drift_pattern_id].connections) == 0:
+            return []
+        drifts = []
+        most_common = list(
+            self.patterns[self.last_drift_pattern_id].connections.most_common(sample_size))
+        assert(len(most_common) > 0)
+        for id, _ in most_common:
+            drift_interval = self.patterns[id].mean()
+            drift_position = self.last_drift_transaction_num + drift_interval
+            distance = abs(transaction_num - drift_position)
+            drifts += [(distance, drift_position, drift_interval)]
+        # Sort by distance.
+        drifts.sort(key=lambda x: x[0])
+        assert(len(drifts) > 0)
+        return list(map(lambda x: (x[1], x[2]), drifts[:num_connections]))
 
-# VolatilityDetector that always returns a drift confidence of a fixed value.
-# Useful for testing effectiveness of the adaptive VolatilityDetector above.
+
+class VolatilityDetector:
+    def __init__(self):
+        self.pattern_network = PatternNetwork()
+        self.last_drift_confidence = None
+
+    def drift_confidence(self, transaction_num):
+        # Find the maximum of the two closest expected drift points' probability
+        # distribution function, and the maximum value of the two closest expected
+        # drift points' PDF at the current transaction number.
+        connections = self.pattern_network.likely_connections_at(
+            10, 2, transaction_num)
+        if len(connections) == 0:
+            return 1.0
+        max_pdf = 0
+        position_max_pdf = 0
+        assert(len(connections) > 0)
+        for position, interval in connections:
+            scale = interval / 2
+            max_pdf = max(max_pdf, stats.norm.pdf(position, position, scale))
+            pdf = stats.norm.pdf(transaction_num, position, scale)
+            position_max_pdf = max(position_max_pdf, pdf)
+
+        position_max_pdf /= max_pdf
+        assert(position_max_pdf >= 0 and position_max_pdf <= 1)
+        return position_max_pdf
+
+    def add(self, transaction_num):
+        self.pattern_network.add(transaction_num)
+
+
 class FixedConfidenceVolatilityDetector:
+    # VolatilityDetector that always returns a drift confidence of a fixed value.
+    # Useful for testing effectiveness of the adaptive VolatilityDetector
+    # above.
     def __init__(self, confidence):
         self.confidence = confidence
 
