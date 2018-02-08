@@ -256,7 +256,8 @@ def main():
                 # Record the drift in the volatility detector. This is used inside
                 # the drift detector to help determine how large a confidence interval
                 # is required when detecting drifts.
-                volatility_detector.add(transaction_num)
+                if not volatility_detector is None:
+                    volatility_detector.add(transaction_num)
                 # Break out of the inner loop, we'll jump back up to the top and mine
                 # a new training window.
                 break
