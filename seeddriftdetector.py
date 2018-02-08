@@ -1,17 +1,26 @@
 from copy import deepcopy
 from driftdetector import SAMPLE_INTERVAL
-from driftdetector import Drift  # May not work...
+from driftdetector import Drift
 from hoeffdingbound import hoeffding_bound
 from rollingmean import RollingMean
 from ruletree import RuleTree
+from driftdetector import ProSeedDriftAlgorithm
 from driftdetector import SeedDriftAlgorithm
 
 
 BlockCompareConfidence = 0.1
 TrainingCompareConfidence = 0.05
 
+# If we're within this many transactions of the next expected drift
+# point, ProSeed won't merge blocks, it will drop them.
+ProSeedMergeExclusionZone = 1000
+
 
 class SeedDriftDetector:
+    def __init__(self, algorithm, volatility_detector=None):
+        self.volatility_detector = volatility_detector
+        assert(algorithm in [SeedDriftAlgorithm, ProSeedDriftAlgorithm])
+        self.is_pro_seed = (algorithm == ProSeedDriftAlgorithm)
 
     def make_test_tree(self):
         # Copy the training rule tree, so that we get a copy of the rules.
@@ -40,6 +49,24 @@ class SeedDriftDetector:
 
         self.num_test_transactions = 0
 
+    def should_merge(self, transaction_num):
+        if self.volatility_detector is not None:
+            # ProSeed; we'll not merge blocks within the "exclusion zone"
+            # around the next expected drift point; we'll drop them instead.
+            next_drift = self.volatility_detector.next_expected_drift(
+                transaction_num)
+            if (next_drift is not None and abs(next_drift - \
+                transaction_num) < ProSeedMergeExclusionZone):
+                return False
+        prev_mean, prev_len = self.previous_rule_tree.rule_miss_rate()
+        curr_mean, curr_len = self.current_rule_tree.rule_miss_rate()
+        return hoeffding_bound(
+            prev_mean,
+            prev_len,
+            curr_mean,
+            curr_len,
+            BlockCompareConfidence)
+
     def check_for_drift(self, transaction, transaction_num):
         # Append to current block.
         self.current_rule_tree.record_matches(transaction)
@@ -58,14 +85,7 @@ class SeedDriftDetector:
         else:
             # Can the current block be merged with the previous block,
             # or should the previous be dropped?
-            prev_mean, prev_len = self.previous_rule_tree.rule_miss_rate()
-            curr_mean, curr_len = self.current_rule_tree.rule_miss_rate()
-            if hoeffding_bound(
-                    prev_mean,
-                    prev_len,
-                    curr_mean,
-                    curr_len,
-                    BlockCompareConfidence):
+            if self.should_merge(transaction_num):
                 # Blocks are similar. Merge them.
                 self.previous_rule_tree.take_and_add_matches(
                     self.current_rule_tree)

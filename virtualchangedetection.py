@@ -21,6 +21,7 @@ from driftdetector import SeedDriftAlgorithm
 from driftdetector import ProSeedDriftAlgorithm
 from driftdetector import VirtualDriftAlgorithm
 from seeddriftdetector import SeedDriftDetector
+from volatilitydetector import ProSeedVolatilityDetector
 from volatilitydetector import VolatilityDetector
 from volatilitydetector import FixedConfidenceVolatilityDetector
 
@@ -129,18 +130,27 @@ def write_rules_to_file(rules, output_filename):
 
 
 def make_volatility_detector(args):
-    if args.fixed_drift_confidence is not None:
-        return FixedConfidenceVolatilityDetector(
-            args.fixed_drift_confidence)
-    else:
-        return VolatilityDetector()
+    if args.drift_algorithm == VirtualDriftAlgorithm:
+        if args.fixed_drift_confidence is not None:
+            return FixedConfidenceVolatilityDetector(
+                args.fixed_drift_confidence)
+        else:
+            return VolatilityDetector()
+
+    # Seed and ProSeed can't use a fixed confidence.
+    assert(args.fixed_drift_confidence is None)
+
+    if args.drift_algorithm == ProSeedDriftAlgorithm:
+        return ProSeedVolatilityDetector()
+
+    return None
 
 
 def make_drift_detector(args, volatility_detector):
     if args.drift_algorithm == VirtualDriftAlgorithm:
         return DriftDetector(volatility_detector)
-    if args.drift_algorithm == SeedDriftAlgorithm:
-        return SeedDriftDetector()
+    if args.drift_algorithm in [SeedDriftAlgorithm, ProSeedDriftAlgorithm]:
+        return SeedDriftDetector(args.drift_algorithm, volatility_detector)
     return None
 
 

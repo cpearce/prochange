@@ -123,6 +123,7 @@ class PatternNetwork:
             sample_size,
             num_connections,
             transaction_num):
+        # Returns list of next expected (drift_position, drift_interval)
         if self.last_drift_pattern_id is None or len(
                 self.patterns[self.last_drift_pattern_id].connections) == 0:
             return []
@@ -144,7 +145,6 @@ class PatternNetwork:
 class VolatilityDetector:
     def __init__(self):
         self.pattern_network = PatternNetwork()
-        self.last_drift_confidence = None
 
     def drift_confidence(self, transaction_num):
         # Find the maximum of the two closest expected drift points' probability
@@ -166,6 +166,21 @@ class VolatilityDetector:
         position_max_pdf /= max_pdf
         assert(position_max_pdf >= 0 and position_max_pdf <= 1)
         return position_max_pdf
+
+    def add(self, transaction_num):
+        self.pattern_network.add(transaction_num)
+
+
+class ProSeedVolatilityDetector:
+    def __init__(self):
+        self.pattern_network = PatternNetwork()
+
+    def next_expected_drift(self, transaction_num):
+        x = self.pattern_network.likely_connections_at(10, 1, transaction_num)
+        if len(x) == 0:
+            return None
+        (drift_position, _) = x[0]
+        return drift_position
 
     def add(self, transaction_num):
         self.pattern_network.add(transaction_num)
