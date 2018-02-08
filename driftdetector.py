@@ -1,5 +1,6 @@
 import numpy
 from copy import deepcopy
+from hoeffdingbound import hoeffding_bound
 from rollingmean import RollingMean
 from ruletree import RuleTree
 from scipy.linalg import norm
@@ -97,13 +98,11 @@ class DriftDetector:
 
         # Detect whether the rag bag differs between the training and
         # test windows.
-        rag_bag = hellinger([self.training_rule_tree.rag_bag()], [
-                            self.test_rule_tree.rag_bag()])
-        self.rag_bag_mean.add_sample(rag_bag)
-        if self.rag_bag_mean.n > SAMPLE_THRESHOLD:
-            conf = self.rag_bag_mean.std_dev() * drift_confidence
-            mean = self.rag_bag_mean.mean()
-            if rag_bag > mean + conf or rag_bag < mean - conf:
-                return Drift("rag-bag", rag_bag, conf, mean)
+        if not hoeffding_bound(self.training_rule_tree.rag_bag(),
+                self.training_rule_tree.transaction_count,
+                self.test_rule_tree.rag_bag(),
+                self.test_rule_tree.transaction_count,
+                0.05):
+            return Drift(drift_type="rag-bag")
 
         return None
