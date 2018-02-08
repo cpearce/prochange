@@ -99,10 +99,10 @@ class DriftDetector:
         # Detect whether the rag bag differs between the training and
         # test windows.
         if not hoeffding_bound(self.training_rule_tree.rag_bag(),
-                self.training_rule_tree.transaction_count,
-                self.test_rule_tree.rag_bag(),
-                self.test_rule_tree.transaction_count,
-                0.05):
+                               self.training_rule_tree.transaction_count,
+                               self.test_rule_tree.rag_bag(),
+                               self.test_rule_tree.transaction_count,
+                               0.05):
             return Drift(drift_type="rag-bag")
 
         return None
