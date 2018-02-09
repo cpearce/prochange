@@ -116,7 +116,7 @@ class PatternNetwork:
             self.patterns.pop(lru_pattern_id)
             # Remove connections in the network to the pattern being removed.
             for pattern_id, pattern in self.patterns.items():
-                pattern.connections.pop(lru_pattern_id)
+                pattern.connections.pop(lru_pattern_id, None)
 
     def likely_connections_at(
             self,
