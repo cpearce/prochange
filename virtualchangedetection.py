@@ -10,6 +10,7 @@
 
 import sys
 import time
+import tracemalloc
 from argparse import ArgumentParser
 from argparse import ArgumentTypeError
 from fptree import mine_fp_tree
@@ -109,6 +110,11 @@ def parse_args():
         type=float_between_0_and_1,
         required=False,
         default=None)
+    parser.add_argument(
+        "--trace-malloc",
+        dest="trace_malloc",
+        default=False,
+        action='store_true')
     return parser.parse_args()
 
 
@@ -158,6 +164,9 @@ def main():
     args = parse_args()
     program_start = time.time()
 
+    if args.trace_malloc:
+        tracemalloc.start()
+
     print("ARMPY - Association Rule Mining using Python.")
     print("Change detection.")
     print("Drift Algorithm: {}".format(args.drift_algorithm))
@@ -171,10 +180,9 @@ def main():
         print(
             "Fixed drift confidence of: {}".format(
                 args.fixed_drift_confidence))
-
+    print("Tracing memory allocations: {}".format(args.trace_malloc))
     print("Generating maximal itemsets: {}".format(args.maximal_itemsets))
 
-    print("Generating frequent itemsets using FPGrowth...", flush=True)
     reader = iter(DatasetReader(args.input))
     transaction_num = 0
     end_of_last_window = 0
@@ -261,18 +269,35 @@ def main():
                 # Record the drift in the volatility detector. This is used inside
                 # the drift detector to help determine how large a confidence interval
                 # is required when detecting drifts.
-                if not volatility_detector is None:
+                if volatility_detector is not None:
                     volatility_detector.add(transaction_num)
                 # Break out of the inner loop, we'll jump back up to the top and mine
                 # a new training window.
                 break
 
         if len(window) < args.training_window_size:
-            print("End of stream")
             break
+
+    print("\nEnd of stream\n")
 
     duration = time.time() - program_start
     print("Total runtime {:.2f} seconds".format(duration))
+
+    if args.trace_malloc:
+        (_, peak_memory) = tracemalloc.get_traced_memory()
+        tracemalloc_memory = tracemalloc.get_tracemalloc_memory()
+        print("Peak memory usage: {:.3f} MB".format(peak_memory / 10**6))
+        print(
+            "tracemalloc overhead: {:.3f} MB".format(
+                (tracemalloc_memory / 10**6)))
+        print("Peak memory usage minus tracemalloc overhead: {:.3f} MB".format(
+            (peak_memory - tracemalloc_memory) / 10**6))
+        snapshot = tracemalloc.take_snapshot()
+        bytes_allocated = sum(x.size for x in snapshot.traces)
+        print(
+            "Total traced memory allocated: {:.3f} MB".format(
+                bytes_allocated / 10**6))
+        tracemalloc.stop()
 
     return 0
 
