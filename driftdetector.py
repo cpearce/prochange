@@ -44,6 +44,8 @@ class DriftDetector:
         self.volatility_detector = volatility_detector
 
     def train(self, window, rules):
+        assert(len(rules) > 0)
+        assert(len(window) > 0)
         self.training_rule_tree = RuleTree(len(window))
         for (antecedent, consequent, _, _, _) in rules:
             self.training_rule_tree.insert(antecedent, consequent)

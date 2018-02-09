@@ -221,6 +221,11 @@ def main():
                 duration),
             flush=True)
 
+        if len(rules) == 0:
+            print("No rules; just noise. Skipping change detection.")
+            print("Consider increasing training window size or lowering minsup/conf.")
+            continue
+
         start = time.time()
         output_filename = args.output + "." + str(cohort_num)
         cohort_num += 1
