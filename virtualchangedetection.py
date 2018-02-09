@@ -115,6 +115,11 @@ def parse_args():
         dest="trace_malloc",
         default=False,
         action='store_true')
+    parser.add_argument(
+        "--disable-save-rules",
+        dest="save_rules",
+        default=True,
+        action='store_false')
     return parser.parse_args()
 
 
@@ -181,6 +186,7 @@ def main():
             "Fixed drift confidence of: {}".format(
                 args.fixed_drift_confidence))
     print("Tracing memory allocations: {}".format(args.trace_malloc))
+    print("Save rules: {}".format(args.save_rules))
     print("Generating maximal itemsets: {}".format(args.maximal_itemsets))
 
     reader = iter(DatasetReader(args.input))
@@ -234,14 +240,15 @@ def main():
             print("Consider increasing training window size or lowering minsup/conf.")
             continue
 
-        start = time.time()
-        output_filename = args.output + "." + str(cohort_num)
-        cohort_num += 1
-        write_rules_to_file(rules, output_filename)
-        print(
-            "Wrote rules for cohort {} to file {} in {:.2f} seconds".format(
-                cohort_num, output_filename, duration),
-            flush=True)
+        if args.save_rules:
+            start = time.time()
+            output_filename = args.output + "." + str(cohort_num)
+            cohort_num += 1
+            write_rules_to_file(rules, output_filename)
+            print(
+                "Wrote rules for cohort {} to file {} in {:.2f} seconds".format(
+                    cohort_num, output_filename, duration),
+                flush=True)
 
         drift_detector = make_drift_detector(args, volatility_detector)
         drift_detector.train(window, rules)
