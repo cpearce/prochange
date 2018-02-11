@@ -1,5 +1,4 @@
 from item import ItemSet
-from apriori import apriori
 from itertools import chain, combinations
 import sys
 
