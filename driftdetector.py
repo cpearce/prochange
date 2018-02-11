@@ -6,7 +6,8 @@ from ruletree import RuleTree
 from scipy.linalg import norm
 
 
-VirtualDriftAlgorithm = "virtual"
+VRChangeDriftAlgorithm = "vrchange"
+ProChangeDriftAlgorithm = "prochange"
 SeedDriftAlgorithm = "seed"
 ProSeedDriftAlgorithm = "proseed"
 

@@ -17,10 +17,8 @@ ProSeedMergeExclusionZone = 1000
 
 
 class SeedDriftDetector:
-    def __init__(self, algorithm, volatility_detector=None):
+    def __init__(self, volatility_detector=None):
         self.volatility_detector = volatility_detector
-        assert(algorithm in [SeedDriftAlgorithm, ProSeedDriftAlgorithm])
-        self.is_pro_seed = (algorithm == ProSeedDriftAlgorithm)
 
     def make_test_tree(self):
         # Copy the training rule tree, so that we get a copy of the rules.

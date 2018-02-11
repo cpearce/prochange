@@ -6,7 +6,7 @@
 #       --min-support 0.05 \
 #       --min-lift 1.0 \
 #       --training-window-size 2500 \
-#       --drift-algorithm seed
+#       --drift-algorithm prochange
 
 import sys
 import time
@@ -19,8 +19,9 @@ from datasetreader import DatasetReader
 from itertools import islice
 from driftdetector import DriftDetector
 from driftdetector import SeedDriftAlgorithm
+from driftdetector import ProChangeDriftAlgorithm
 from driftdetector import ProSeedDriftAlgorithm
-from driftdetector import VirtualDriftAlgorithm
+from driftdetector import VRChangeDriftAlgorithm
 from seeddriftdetector import SeedDriftDetector
 from volatilitydetector import ProSeedVolatilityDetector
 from volatilitydetector import VolatilityDetector
@@ -54,8 +55,9 @@ def float_gteq_1(string):
 
 def valid_drift_algorithm(value):
     valid_modes = [
-        VirtualDriftAlgorithm,
+        VRChangeDriftAlgorithm,
         SeedDriftAlgorithm,
+        ProChangeDriftAlgorithm,
         ProSeedDriftAlgorithm]
     if value not in valid_modes:
         msg = "{} is not in valid modes {}".format(value, valid_modes)
@@ -78,7 +80,7 @@ def parse_args():
         dest="drift_algorithm",
         type=valid_drift_algorithm,
         required=False,
-        default=VirtualDriftAlgorithm)
+        default=VRChangeDriftAlgorithm)
     parser.add_argument(
         "--training-window-size",
         dest="training_window_size",
@@ -120,7 +122,17 @@ def parse_args():
         dest="save_rules",
         default=True,
         action='store_false')
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.drift_algorithm == VRChangeDriftAlgorithm:
+        if args.fixed_drift_confidence is None:
+            print("You must provide a fixed drift confidence in VRChange mode.")
+            sys.exit(-1)
+    elif args.fixed_drift_confidence is not None:
+        print("Fixed drift confidence is only valid with VRChange mode.")
+        sys.exit(-1)
+
+    return args
 
 
 def write_rules_to_file(rules, output_filename):
@@ -141,27 +153,28 @@ def write_rules_to_file(rules, output_filename):
 
 
 def make_volatility_detector(args):
-    if args.drift_algorithm == VirtualDriftAlgorithm:
-        if args.fixed_drift_confidence is not None:
-            return FixedConfidenceVolatilityDetector(
-                args.fixed_drift_confidence)
-        else:
-            return VolatilityDetector()
+    if args.drift_algorithm == VRChangeDriftAlgorithm:
+        return FixedConfidenceVolatilityDetector(
+            args.fixed_drift_confidence)
 
-    # Seed and ProSeed can't use a fixed confidence.
-    assert(args.fixed_drift_confidence is None)
+    if args.drift_algorithm == ProChangeDriftAlgorithm:
+        return VolatilityDetector()
 
     if args.drift_algorithm == ProSeedDriftAlgorithm:
         return ProSeedVolatilityDetector()
+
+    # Note: Seed does not use a volatility detector, so return None.
 
     return None
 
 
 def make_drift_detector(args, volatility_detector):
-    if args.drift_algorithm == VirtualDriftAlgorithm:
+    if args.drift_algorithm in [
+            VRChangeDriftAlgorithm,
+            ProChangeDriftAlgorithm]:
         return DriftDetector(volatility_detector)
     if args.drift_algorithm in [SeedDriftAlgorithm, ProSeedDriftAlgorithm]:
-        return SeedDriftDetector(args.drift_algorithm, volatility_detector)
+        return SeedDriftDetector(volatility_detector)
     return None
 
 
@@ -172,8 +185,7 @@ def main():
     if args.trace_malloc:
         tracemalloc.start()
 
-    print("ARMPY - Association Rule Mining using Python.")
-    print("Change detection.")
+    print("Virtual Change/Drift Detection - Association Rule Mining using Python.")
     print("Drift Algorithm: {}".format(args.drift_algorithm))
     print("Input file: {}".format(args.input))
     print("Output file prefix: {}".format(args.output))
@@ -197,7 +209,6 @@ def main():
     while True:
         window = take(args.training_window_size, reader)
         if len(window) == 0:
-            print("End of stream")
             break
         print("")
         print(
@@ -304,6 +315,7 @@ def main():
         print(
             "Total traced memory allocated: {:.3f} MB".format(
                 bytes_allocated / 10**6))
+
         tracemalloc.stop()
 
     return 0
